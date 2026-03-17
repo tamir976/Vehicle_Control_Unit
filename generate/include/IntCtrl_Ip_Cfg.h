@@ -75,10 +75,19 @@ extern const IntCtrl_Ip_CtrlConfigType IntCtrlConfig_0;
 /* Declaration of interrupt handlers 
  * NOTE: For application specific handlers, these functions must be implemented in the application code!
  */
+extern void Flexcan0_0_handler(void);
 extern void Flexcan0_1_handler(void);
+extern void Flexcan1_0_handler(void);
+extern void Flexcan1_1_handler(void);
+extern void Flexcan2_0_handler(void);
+extern void Flexcan2_1_handler(void);
+extern void Flexcan3_0_handler(void);
+extern void Flexcan3_1_handler(void);
+extern void Flexcan4_0_handler(void);
+extern void Flexcan4_1_handler(void);
 extern void Flexcan5_0_handler(void);
 extern void Flexcan5_1_handler(void);
-extern void Uart2_handler(void);
+extern void I2c0_handler(void);
 #define PLATFORM_STOP_SEC_CONFIG_DATA_UNSPECIFIED
 #include "Platform_MemMap.h"
 

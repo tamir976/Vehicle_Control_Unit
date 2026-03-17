@@ -1,6 +1,8 @@
 -c
 -I../RTD/include
--I"C:/Users/20235607/s32k344_canhub_VCU/vehicle_control_unit/board"
+-I../FreeRTOS/Source/include
+-I../FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1
+-I"C:/Users/20235607/VCU_Prius/VCU_prius/board"
 -x assembler-with-cpp
 -ggdb3
 -mcpu=cortex-m7

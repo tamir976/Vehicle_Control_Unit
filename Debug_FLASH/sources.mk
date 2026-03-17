@@ -20,6 +20,9 @@ C_DEPS :=
 
 # Every subdirectory with source files must be described here
 SUBDIRS := \
+FreeRTOS/Source \
+FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1 \
+FreeRTOS/Source/portable/MemMang \
 Project_Settings/Startup_Code \
 RTD/src \
 board \

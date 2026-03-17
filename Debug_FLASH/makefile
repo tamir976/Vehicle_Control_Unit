@@ -13,6 +13,9 @@ RM := rm -rf
 -include board/subdir.mk
 -include RTD/src/subdir.mk
 -include Project_Settings/Startup_Code/subdir.mk
+-include FreeRTOS/Source/portable/MemMang/subdir.mk
+-include FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/subdir.mk
+-include FreeRTOS/Source/subdir.mk
 -include subdir.mk
 -include objects.mk
 
@@ -26,23 +29,23 @@ endif
 
 # Add inputs and outputs from these tool invocations to the build variables 
 SECONDARY_SIZE += \
-vehicle_control_unit.siz \
+VCU_prius.siz \
 
 
 # All Target
-all: vehicle_control_unit.elf secondary-outputs
+all: VCU_prius.elf secondary-outputs
 
 # Tool invocations
-vehicle_control_unit.elf: $(OBJS) C:/Users/20235607/s32k344_canhub_VCU/vehicle_control_unit/Project_Settings/Linker_Files/linker_flash_s32k344.ld $(USER_OBJS)
+VCU_prius.elf: $(OBJS) C:/Users/20235607/VCU_Prius/VCU_prius/Project_Settings/Linker_Files/linker_flash_s32k344.ld $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: Standard S32DS C Linker'
-	arm-none-eabi-gcc -o "vehicle_control_unit.elf" "@vehicle_control_unit.args"  $(USER_OBJS)
+	arm-none-eabi-gcc -o "VCU_prius.elf" "@VCU_prius.args"  $(USER_OBJS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
-vehicle_control_unit.siz: vehicle_control_unit.elf
+VCU_prius.siz: VCU_prius.elf
 	@echo 'Invoking: Standard S32DS Print Size'
-	arm-none-eabi-size --format=berkeley vehicle_control_unit.elf
+	arm-none-eabi-size --format=berkeley VCU_prius.elf
 	@echo 'Finished building: $@'
 	@echo ' '
 

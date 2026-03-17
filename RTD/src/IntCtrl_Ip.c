@@ -773,13 +773,10 @@ IntCtrl_Ip_StatusType IntCtrl_Ip_Init(const IntCtrl_Ip_CtrlConfigType *pIntCtrlC
         IntCtrl_Ip_SetPriority(pIntCtrlCtrlConfig->aIrqConfig[u32IrqIdx].eIrqNumber,
                                pIntCtrlCtrlConfig->aIrqConfig[u32IrqIdx].u8IrqPriority);
 
-        /* Install the configured handler only if VTOR is in RAM */
-        if (S32_SCB->VTOR >= 0x20000000UL)
-        {
-            IntCtrl_Ip_InstallHandler(pIntCtrlCtrlConfig->aIrqConfig[u32IrqIdx].eIrqNumber,
-                                      pIntCtrlCtrlConfig->aIrqConfig[u32IrqIdx].pfHandler,
-                                      NULL_PTR);
-        }
+        /* Install the configured handler */
+        IntCtrl_Ip_InstallHandler(pIntCtrlCtrlConfig->aIrqConfig[u32IrqIdx].eIrqNumber,
+                                  pIntCtrlCtrlConfig->aIrqConfig[u32IrqIdx].pfHandler,
+                                  NULL_PTR);
 #if (INT_CTRL_IP_CORTEXR == STD_ON)
     #if (INT_CTRL_IP_ENABLE_GIC_PRIORITY_GROUP == STD_ON)
         IntCtrl_Ip_SetGroup(pIntCtrlCtrlConfig->aIrqConfig[u32IrqIdx].eIrqNumber,

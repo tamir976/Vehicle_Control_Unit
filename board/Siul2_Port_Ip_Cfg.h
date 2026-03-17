@@ -98,7 +98,7 @@ extern "C"{
 /*! @brief Definitions for PortContainer_0_BOARD_InitPeripherals Functional Group */
 
 /*! @brief User number of configured pins */
-#define NUM_OF_CONFIGURED_PINS_PortContainer_0_BOARD_InitPeripherals 15
+#define NUM_OF_CONFIGURED_PINS_PortContainer_0_BOARD_InitPeripherals 41
 
 #define PORT_START_SEC_CONFIG_DATA_UNSPECIFIED
 #include "Port_MemMap.h"
@@ -110,34 +110,86 @@ extern const Siul2_Port_Ip_PinSettingsConfig g_pin_mux_InitConfigArr_PortContain
 #include "Port_MemMap.h"
 
 /*! @brief Defines for user pin and port configurations */
-#define CAN0_rx_PIN             6u
-#define CAN0_rx_PORT            PTA_L_HALF
-#define CAN0_tx_PIN             7u
-#define CAN0_tx_PORT            PTA_L_HALF
-#define Uart2_rx_PIN            8u
-#define Uart2_rx_PORT           PTA_L_HALF
-#define Uart2_tx_PIN            9u
-#define Uart2_tx_PORT           PTA_L_HALF
-#define CAN0_Led_PIN            2u
-#define CAN0_Led_PORT           PTC_H_HALF
-#define CAN0_Err_PIN            4u
-#define CAN0_Err_PORT           PTC_H_HALF
-#define CAN0_Stb_PIN            5u
-#define CAN0_Stb_PORT           PTC_H_HALF
-#define CAN5_Stb_PIN            1u
-#define CAN5_Stb_PORT           PTE_H_HALF
-#define CAN5_Err_PIN            8u
-#define CAN5_Err_PORT           PTD_H_HALF
-#define CAN5_En_PIN             14u
-#define CAN5_En_PORT            PTD_H_HALF
-#define CAN5_Led_PIN            15u
-#define CAN5_Led_PORT           PTD_H_HALF
-#define CAN0_En_PIN             8u
-#define CAN0_En_PORT            PTC_H_HALF
-#define CAN5_rx_PIN             11u
-#define CAN5_rx_PORT            PTC_L_HALF
-#define CAN5_tx_PIN             10u
-#define CAN5_tx_PORT            PTC_L_HALF
+#define can0_rx_PIN             6u
+#define can0_rx_PORT            PTA_L_HALF
+#define can0_tx_PIN             7u
+#define can0_tx_PORT            PTA_L_HALF
+#define uart2_rx_PIN            8u
+#define uart2_rx_PORT           PTA_L_HALF
+#define uart2_tx_PIN            9u
+#define uart2_tx_PORT           PTA_L_HALF
+#define can3_en_PIN             0u
+#define can3_en_PORT            PTB_L_HALF
+#define can3_stb_PIN            1u
+#define can3_stb_PORT           PTB_L_HALF
+#define can3_led_PIN            8u
+#define can3_led_PORT           PTB_H_HALF
+#define can4_led_PIN            10u
+#define can4_led_PORT           PTB_H_HALF
+#define can1_tx_PIN             8u
+#define can1_tx_PORT            PTC_L_HALF
+#define can1_rx_PIN             9u
+#define can1_rx_PORT            PTC_L_HALF
+#define can5_tx_PIN             10u
+#define can5_tx_PORT            PTC_L_HALF
+#define can5_rx_PIN             11u
+#define can5_rx_PORT            PTC_L_HALF
+#define can0_led_PIN            2u
+#define can0_led_PORT           PTC_H_HALF
+#define can0_err_PIN            4u
+#define can0_err_PORT           PTC_H_HALF
+#define can0_stb_PIN            5u
+#define can0_stb_PORT           PTC_H_HALF
+#define can4_err_PIN            7u
+#define can4_err_PORT           PTC_H_HALF
+#define can0_en_PIN             8u
+#define can0_en_PORT            PTC_H_HALF
+#define can4_stb_PIN            9u
+#define can4_stb_PORT           PTC_H_HALF
+#define can4_en_PIN             10u
+#define can4_en_PORT            PTC_H_HALF
+#define can3_err_PIN            11u
+#define can3_err_PORT           PTC_H_HALF
+#define can3_tx_PIN             12u
+#define can3_tx_PORT            PTC_H_HALF
+#define can3_rx_PIN             13u
+#define can3_rx_PORT            PTC_H_HALF
+#define can4_tx_PIN             14u
+#define can4_tx_PORT            PTC_H_HALF
+#define can4_rx_PIN             15u
+#define can4_rx_PORT            PTC_H_HALF
+#define can1_stb_PIN            2u
+#define can1_stb_PORT           PTD_L_HALF
+#define can1_err_PIN            3u
+#define can1_err_PORT           PTD_L_HALF
+#define can2_en_PIN             4u
+#define can2_en_PORT            PTD_L_HALF
+#define can2_led_PIN            4u
+#define can2_led_PORT           PTD_H_HALF
+#define can2_err_PIN            5u
+#define can2_err_PORT           PTD_H_HALF
+#define can2_stb_PIN            6u
+#define can2_stb_PORT           PTD_H_HALF
+#define can1_en_PIN             7u
+#define can1_en_PORT            PTD_H_HALF
+#define can5_err_PIN            8u
+#define can5_err_PORT           PTD_H_HALF
+#define can5_en_PIN             14u
+#define can5_en_PORT            PTD_H_HALF
+#define can5_led_PIN            15u
+#define can5_led_PORT           PTD_H_HALF
+#define can5_stb_PIN            1u
+#define can5_stb_PORT           PTE_H_HALF
+#define can1_led_PIN            5u
+#define can1_led_PORT           PTE_L_HALF
+#define can2_tx_PIN             8u
+#define can2_tx_PORT            PTE_H_HALF
+#define can2_rx_PIN             9u
+#define can2_rx_PORT            PTE_H_HALF
+#define i2c0_sda_PIN            13u
+#define i2c0_sda_PORT           PTD_L_HALF
+#define i2c0_scl_PIN            14u
+#define i2c0_scl_PORT           PTD_L_HALF
 
 /*==================================================================================================
                                            ENUMS

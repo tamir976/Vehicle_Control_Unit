@@ -8,7 +8,7 @@ board/Siul2_Port_Ip_Cfg.o: ../board/Siul2_Port_Ip_Cfg.c \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Compiler.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Compiler_Cfg.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/CompilerDefinition.h \
- C\:/Users/20235607/s32k344_canhub_VCU/vehicle_control_unit/generate/include/Siul2_Port_Ip_Defines.h \
+ C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/Siul2_Port_Ip_Defines.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344_DCM_GPR.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Port_MemMap.h
 ../board/Siul2_Port_Ip_Cfg.h:
@@ -20,6 +20,6 @@ C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Compiler.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Compiler_Cfg.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/CompilerDefinition.h:
-C\:/Users/20235607/s32k344_canhub_VCU/vehicle_control_unit/generate/include/Siul2_Port_Ip_Defines.h:
+C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/Siul2_Port_Ip_Defines.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344_DCM_GPR.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Port_MemMap.h:

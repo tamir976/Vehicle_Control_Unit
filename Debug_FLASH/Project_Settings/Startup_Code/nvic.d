@@ -6,7 +6,7 @@ Project_Settings/Startup_Code/nvic.o: \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Compiler_Cfg.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/CompilerDefinition.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/Platform_TS_T40D34M70I0R0/startup/include/nvic.h \
- C\:/Users/20235607/s32k344_canhub_VCU/vehicle_control_unit/generate/include/DeviceDefinition.h \
+ C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/DeviceDefinition.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344_SCB.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344_COMMON.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344_NVIC.h \
@@ -17,7 +17,7 @@ C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Compiler_Cfg.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/CompilerDefinition.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/Platform_TS_T40D34M70I0R0/startup/include/nvic.h:
-C\:/Users/20235607/s32k344_canhub_VCU/vehicle_control_unit/generate/include/DeviceDefinition.h:
+C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/DeviceDefinition.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344_SCB.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344_COMMON.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344_NVIC.h:

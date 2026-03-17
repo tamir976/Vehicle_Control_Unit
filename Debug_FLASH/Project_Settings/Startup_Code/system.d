@@ -7,7 +7,7 @@ Project_Settings/Startup_Code/system.o: \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Compiler.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Compiler_Cfg.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/CompilerDefinition.h \
- C\:/Users/20235607/s32k344_canhub_VCU/vehicle_control_unit/generate/include/DeviceDefinition.h \
+ C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/DeviceDefinition.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344_SCB.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344_COMMON.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344_MPU.h \
@@ -16,12 +16,12 @@ Project_Settings/Startup_Code/system.o: \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/Platform_TS_T40D34M70I0R0/startup/include/core_specific.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Mcal.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Std_Types.h \
- C\:/Users/20235607/s32k344_canhub_VCU/vehicle_control_unit/generate/include/Soc_Ips.h \
+ C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/Soc_Ips.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/IpVersionMacros.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Reg_eSys.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/OsIf_Internal.h \
- C\:/Users/20235607/s32k344_canhub_VCU/vehicle_control_unit/generate/include/OsIf_Cfg.h \
- C\:/Users/20235607/s32k344_canhub_VCU/vehicle_control_unit/generate/include/OsIf_ArchCfg.h \
+ C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/OsIf_Cfg.h \
+ C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/OsIf_ArchCfg.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344_SYSTICK.h
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Platform_Types.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/Platform_TS_T40D34M70I0R0/startup/include/system.h:
@@ -30,7 +30,7 @@ C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Compiler.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Compiler_Cfg.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/CompilerDefinition.h:
-C\:/Users/20235607/s32k344_canhub_VCU/vehicle_control_unit/generate/include/DeviceDefinition.h:
+C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/DeviceDefinition.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344_SCB.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344_COMMON.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344_MPU.h:
@@ -39,10 +39,10 @@ C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/Platform_TS_T40D34M70I0R0/startup/include/core_specific.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Mcal.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Std_Types.h:
-C\:/Users/20235607/s32k344_canhub_VCU/vehicle_control_unit/generate/include/Soc_Ips.h:
+C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/Soc_Ips.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/IpVersionMacros.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Reg_eSys.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/OsIf_Internal.h:
-C\:/Users/20235607/s32k344_canhub_VCU/vehicle_control_unit/generate/include/OsIf_Cfg.h:
-C\:/Users/20235607/s32k344_canhub_VCU/vehicle_control_unit/generate/include/OsIf_ArchCfg.h:
+C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/OsIf_Cfg.h:
+C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/OsIf_ArchCfg.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344_SYSTICK.h:

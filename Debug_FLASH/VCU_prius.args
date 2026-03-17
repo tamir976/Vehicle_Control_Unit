@@ -2,8 +2,8 @@
 --entry=Reset_Handler
 -ggdb3
 -T
-"C:/Users/20235607/s32k344_canhub_VCU/vehicle_control_unit/Project_Settings/Linker_Files/linker_flash_s32k344.ld"
--Wl,-Map,"vehicle_control_unit.map"
+"C:/Users/20235607/VCU_Prius/VCU_prius/Project_Settings/Linker_Files/linker_flash_s32k344.ld"
+-Wl,-Map,"VCU_prius.map"
 -mcpu=cortex-m7
 -mthumb
 -mlittle-endian
@@ -12,6 +12,15 @@
 -specs=nano.specs
 -specs=nosys.specs
 --sysroot="C:/NXP/S32DS.3.6.5/S32DS/build_tools/gcc_v10.2/gcc-10.2-arm32-eabi/arm-none-eabi/lib"
+"./FreeRTOS/Source/croutine.o"
+"./FreeRTOS/Source/event_groups.o"
+"./FreeRTOS/Source/list.o"
+"./FreeRTOS/Source/queue.o"
+"./FreeRTOS/Source/stream_buffer.o"
+"./FreeRTOS/Source/tasks.o"
+"./FreeRTOS/Source/timers.o"
+"./FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/port.o"
+"./FreeRTOS/Source/portable/MemMang/heap_1.o"
 "./Project_Settings/Startup_Code/Vector_Table.o"
 "./Project_Settings/Startup_Code/exceptions.o"
 "./Project_Settings/Startup_Code/nvic.o"
@@ -40,6 +49,8 @@
 "./RTD/src/FlexCAN_Ip_Irq.o"
 "./RTD/src/Igf_Port_Ip.o"
 "./RTD/src/IntCtrl_Ip.o"
+"./RTD/src/Lpi2c_Ip.o"
+"./RTD/src/Lpi2c_Ip_Irq.o"
 "./RTD/src/Lpuart_Uart_Ip.o"
 "./RTD/src/Lpuart_Uart_Ip_Irq.o"
 "./RTD/src/OsIf_Interrupts.o"
@@ -50,6 +61,7 @@
 "./RTD/src/SchM_BaseNXP.o"
 "./RTD/src/SchM_Can_43_FLEXCAN.o"
 "./RTD/src/SchM_Dio.o"
+"./RTD/src/SchM_I2c.o"
 "./RTD/src/SchM_Mcu.o"
 "./RTD/src/SchM_Port.o"
 "./RTD/src/SchM_Uart.o"
@@ -62,6 +74,7 @@
 "./generate/src/FlexCAN_Ip_Sa_PBcfg.o"
 "./generate/src/Igf_Port_Ip_Cfg.o"
 "./generate/src/IntCtrl_Ip_Cfg.o"
+"./generate/src/Lpi2c_Ip_Sa_PBcfg.o"
 "./generate/src/Lpuart_Uart_Ip_Sa_PBcfg.o"
 "./generate/src/OsIf_Cfg.o"
 "./src/main.o"
