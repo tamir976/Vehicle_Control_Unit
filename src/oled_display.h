@@ -183,7 +183,11 @@ static void draw_string5x7(uint8_t x, uint8_t y, const char *s)
 
 static void ssd1306_draw_text(uint8_t x, uint8_t y, const char *s)
 {
+	ssd1306_init();
+	ssd1306_clear();
     draw_string5x7(x, y, s);
+    ssd1306_update();
+    ssd1306_on();
 }
 
 #endif /* OLED_DISPLAY_H_ */

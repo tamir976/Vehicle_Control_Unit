@@ -68,23 +68,18 @@ extern "C"{
 #include "Platform_MemMap.h"
 /* List of configuration for interrupts #1 */
 static const IntCtrl_Ip_IrqConfigType aIrqConfiguration1[] = {
-    {FlexCAN0_0_IRQn, (boolean)TRUE, 1U, &Flexcan0_0_handler},
-    {FlexCAN0_1_IRQn, (boolean)TRUE, 1U, &Flexcan0_1_handler},
-    {FlexCAN1_0_IRQn, (boolean)TRUE, 1U, &Flexcan1_0_handler},
-    {FlexCAN1_1_IRQn, (boolean)TRUE, 1U, &Flexcan1_1_handler},
-    {FlexCAN2_0_IRQn, (boolean)TRUE, 1U, &Flexcan2_0_handler},
-    {FlexCAN2_1_IRQn, (boolean)TRUE, 1U, &Flexcan2_1_handler},
-    {FlexCAN3_0_IRQn, (boolean)TRUE, 1U, &Flexcan3_0_handler},
-    {FlexCAN3_1_IRQn, (boolean)TRUE, 1U, &Flexcan3_1_handler},
-    {FlexCAN4_0_IRQn, (boolean)TRUE, 1U, &Flexcan4_0_handler},
-    {FlexCAN4_1_IRQn, (boolean)TRUE, 1U, &Flexcan4_1_handler},
-    {FlexCAN5_0_IRQn, (boolean)TRUE, 1U, &Flexcan5_0_handler},
-    {FlexCAN5_1_IRQn, (boolean)TRUE, 1U, &Flexcan5_1_handler},
-    {LPI2C0_IRQn, (boolean)TRUE, 3U, &I2c0_handler},
+    {FlexCAN0_1_IRQn, (boolean)TRUE, 5U, &Flexcan0_1_handler},
+    {FlexCAN1_1_IRQn, (boolean)TRUE, 5U, &Flexcan1_1_handler},
+    {FlexCAN2_1_IRQn, (boolean)TRUE, 5U, &Flexcan2_1_handler},
+    {FlexCAN3_1_IRQn, (boolean)TRUE, 5U, &Flexcan3_1_handler},
+    {FlexCAN4_1_IRQn, (boolean)TRUE, 5U, &Flexcan4_1_handler},
+    {FlexCAN5_1_IRQn, (boolean)TRUE, 5U, &Flexcan5_1_handler},
+    {LPI2C0_IRQn, (boolean)TRUE, 8U, &I2c0_handler},
+    {LPUART2_IRQn, (boolean)TRUE, 8U, &Uart2_handler},
 };
 /* Configuration structure for interrupt controller #1*/
 const IntCtrl_Ip_CtrlConfigType IntCtrlConfig_0 = {
-    13U,
+    8U,
     aIrqConfiguration1
 };
 #define PLATFORM_STOP_SEC_CONFIG_DATA_UNSPECIFIED
