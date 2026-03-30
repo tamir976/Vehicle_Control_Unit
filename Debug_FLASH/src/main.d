@@ -145,15 +145,31 @@ src/main.o: ../src/main.c \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/I2c_MemMap.h \
  C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/Lpi2c_Ip_Sa_PBcfg.h \
  ../RTD/include/Lpi2c_Ip_Irq.h ../RTD/include/Lpi2c_Ip.h \
- ../RTD/include/Lpi2c_Ip_Types.h ../src/oled_display.h \
- ../src/ascii_table.h ../FreeRTOS/Source/include/FreeRTOS.h \
+ ../RTD/include/Lpi2c_Ip_Types.h ../RTD/include/Lpuart_Uart_Ip.h \
+ ../RTD/include/Lpuart_Uart_Ip_Types.h \
+ ../RTD/include/Lpuart_Uart_Ip_HwAccess.h \
+ C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/Lpuart_Uart_Ip_Defines.h \
+ C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344_LPUART.h \
+ ../RTD/include/SchM_Uart.h \
+ C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Rte_MemMap.h \
+ C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Uart_MemMap.h \
+ C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/Lpuart_Uart_Ip_Cfg.h \
+ C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/Lpuart_Uart_Ip_Sa_PBcfg.h \
+ ../RTD/include/Lpuart_Uart_Ip_Types.h \
+ C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/Lpuart_Uart_Ip_Sa_PBcfg.h \
+ ../FreeRTOS/Source/include/FreeRTOS.h \
  C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/FreeRTOSConfig.h \
  ../FreeRTOS/Source/include/projdefs.h \
  ../FreeRTOS/Source/include/portable.h \
  ../FreeRTOS/Source/include/deprecated_definitions.h \
  ../FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/portmacro.h \
- ../FreeRTOS/Source/include/mpu_wrappers.h \
- ../FreeRTOS/Source/include/task.h ../FreeRTOS/Source/include/list.h
+ ../FreeRTOS/Source/include/mpu_wrappers.h ../RTD/include/OsIf.h \
+ ../FreeRTOS/Source/include/task.h ../FreeRTOS/Source/include/list.h \
+ ../src/include/monitor.h ../src/include/oled_display.h \
+ ../src/include/ascii_table.h ../src/include/static_message.h \
+ ../src/include/car_state.h ../src/include/can_descriptors.h \
+ ../src/include/can_frame.h ../src/include/decoder.h \
+ ../src/include/car_state.h ../src/include/can_frame.h
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344_ADC.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344_COMMON.h:
@@ -307,8 +323,18 @@ C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/Lpi2c_Ip_Sa_PBcfg.h:
 ../RTD/include/Lpi2c_Ip_Irq.h:
 ../RTD/include/Lpi2c_Ip.h:
 ../RTD/include/Lpi2c_Ip_Types.h:
-../src/oled_display.h:
-../src/ascii_table.h:
+../RTD/include/Lpuart_Uart_Ip.h:
+../RTD/include/Lpuart_Uart_Ip_Types.h:
+../RTD/include/Lpuart_Uart_Ip_HwAccess.h:
+C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/Lpuart_Uart_Ip_Defines.h:
+C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344_LPUART.h:
+../RTD/include/SchM_Uart.h:
+C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Rte_MemMap.h:
+C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Uart_MemMap.h:
+C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/Lpuart_Uart_Ip_Cfg.h:
+C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/Lpuart_Uart_Ip_Sa_PBcfg.h:
+../RTD/include/Lpuart_Uart_Ip_Types.h:
+C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/Lpuart_Uart_Ip_Sa_PBcfg.h:
 ../FreeRTOS/Source/include/FreeRTOS.h:
 C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/FreeRTOSConfig.h:
 ../FreeRTOS/Source/include/projdefs.h:
@@ -316,5 +342,16 @@ C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/FreeRTOSConfig.h:
 ../FreeRTOS/Source/include/deprecated_definitions.h:
 ../FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/portmacro.h:
 ../FreeRTOS/Source/include/mpu_wrappers.h:
+../RTD/include/OsIf.h:
 ../FreeRTOS/Source/include/task.h:
 ../FreeRTOS/Source/include/list.h:
+../src/include/monitor.h:
+../src/include/oled_display.h:
+../src/include/ascii_table.h:
+../src/include/static_message.h:
+../src/include/car_state.h:
+../src/include/can_descriptors.h:
+../src/include/can_frame.h:
+../src/include/decoder.h:
+../src/include/car_state.h:
+../src/include/can_frame.h:

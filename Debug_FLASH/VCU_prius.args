@@ -1,6 +1,7 @@
 -nostartfiles
 --entry=Reset_Handler
 -ggdb3
+-u _printf_float
 -T
 "C:/Users/20235607/VCU_Prius/VCU_prius/Project_Settings/Linker_Files/linker_flash_s32k344.ld"
 -Wl,-Map,"VCU_prius.map"
@@ -77,7 +78,11 @@
 "./generate/src/Lpi2c_Ip_Sa_PBcfg.o"
 "./generate/src/Lpuart_Uart_Ip_Sa_PBcfg.o"
 "./generate/src/OsIf_Cfg.o"
+"./src/can_frame.o"
+"./src/decoder.o"
 "./src/main.o"
+"./src/monitor.o"
+"./src/static_message.o"
 -lc
 -lm
 -lgcc

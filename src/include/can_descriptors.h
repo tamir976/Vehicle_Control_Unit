@@ -1,3 +1,6 @@
+#ifndef INCLUDE_CAN_DESCRIPTORS_H_
+#define INCLUDE_CAN_DESCRIPTORS_H_
+
 #include <stdint.h>
 
 #define MESSAGE_COUNT 60
@@ -20,7 +23,7 @@ typedef struct {
     uint8_t signal_type;
 } SignalDesc; /* signal_type: 0=bool, 1=int/enum, 2=float */
 
-MessageDesc message_table[] = {
+static MessageDesc message_table[] = {
     {0x24, 8, 0, 3}, /* KINEMATICS */
     {0x25, 8, 3, 3}, /* STEER_ANGLE_SENSOR */
     {0x77, 6, 6, 6}, /* ENG2F41 */
@@ -83,7 +86,7 @@ MessageDesc message_table[] = {
     {0x3F6, 8, 361, 6}, /* BSM */
 };
 
-SignalDesc signal_table[] = {
+static SignalDesc signal_table[] = {
     {33, 10, 0, 0, 0.03589f, -18.375f, 2}, /* ACCEL_Y (KINEMATICS) */
     {1, 10, 0, 0, 0.244f, -125.0f, 2}, /* YAW_RATE (KINEMATICS) */
     {17, 10, 0, 0, 0.03589f, -18.375f, 2}, /* ACCEL_X (KINEMATICS) */
@@ -451,5 +454,6 @@ SignalDesc signal_table[] = {
     {10, 1, 0, 0, 1.0f, 0.0f, 0}, /* R_APPROACHING (BSM) */
     {7, 1, 0, 0, 1.0f, 0.0f, 0}, /* ADJACENT_ENABLED (BSM) */
     {15, 1, 0, 0, 1.0f, 0.0f, 0}, /* APPROACHING_ENABLED (BSM) */
+#endif /* INCLUDE_CAN_DESCRIPTORS_H_ */
 };
 

@@ -17,16 +17,18 @@
 #include "Lpi2c_Ip.h"
 #include "Lpuart_Uart_Ip.h"
 #include "Lpuart_Uart_Ip_Sa_PBcfg.h"
-#include "oled_display.h"
 #include "FreeRTOS.h"
 #include "OsIf.h"
 #include "task.h"
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include "include/monitor.h"
+#include "include/oled_display.h"
 #include "include/static_message.h"
-#include "include/decoder.h"
 #include "include/car_state.h"
+#include "include/can_frame.h"
+#include "include/decoder.h"
 
 #define INST_FLEXCAN0 (0u)
 #define INST_FLEXCAN1 (1u)
@@ -73,12 +75,10 @@
 
 #define CAN_TX_MB_COUNT_32  (22u)
 #define CAN_TX_MB_COUNT_16  (15u)
-
-#define CAN_CACHE_SIZE      (256u)
-#define CAN_DEFAULT_TIMEOUT pdMS_TO_TICKS(100u)
-
 #define PRIUS_SPEED_MSGID   (0x0B4u)
 #define PRIUS_GEAR_MSGID    (0x127u)
+#define UART_TX_TIMEOUT_US  (50000u)
+#define UART_TELEM_PERIOD_MS (100u)
 
 static const uint8_t PRIUS_SPEED_MSG_DATA[8] = {0x30, 0x00, 0x00, 0x74, 0x00, 0x00, 0x00, 0x00};
 static const uint8_t PRIUS_GEAR_MSG_DATA[8]  = {0x07, 0xA0, 0x1F, 0x00, 0x08, 0x00, 0x10, 0x00};
@@ -89,69 +89,21 @@ static const uint8_t PRIUS_GEAR_MSG_DATA[8]  = {0x07, 0xA0, 0x1F, 0x00, 0x08, 0x
 static volatile boolean can_rx_flag[6];
 static Flexcan_Ip_MsgBuffType can_rx[6];
 static uint8_t txMbNext[6] = {0u};
-
-typedef struct
-{
-    uint8_t used;
-    uint8_t bus;
-    uint32_t id;
-    uint8_t dlc;
-    uint8_t data[8];
-    boolean valid;
-    uint32_t timestamp;
-    TickType_t lastRxTick;
-    uint8_t decode_flag;
-} CanFrameEntry;
-
-typedef struct
-{
-    CanFrameEntry *entries;
-    uint32_t count;
-} CanFrameCache;
-
-typedef struct
-{
-    volatile uint32_t canCacheOverflow;
-    volatile uint32_t canTxFails;
-    volatile uint32_t canInitFails;
-} AppStats;
-
-static AppStats gStats = {0u};
-
-static CanFrameEntry bus0Table[CAN_CACHE_SIZE];
-static CanFrameEntry bus1Table[CAN_CACHE_SIZE];
-static CanFrameEntry bus3Table[CAN_CACHE_SIZE];
-
-static CanFrameCache gCan0Cache =
-{
-    .entries = bus0Table,
-    .count = CAN_CACHE_SIZE
-};
-static CanFrameCache gCan1Cache =
-{
-    .entries = bus1Table,
-    .count = CAN_CACHE_SIZE
-};
-static CanFrameCache gCan3Cache =
-{
-    .entries = bus3Table,
-    .count = CAN_CACHE_SIZE
-};
-
+static CarState gCarState;
 
 volatile int exit_code = 0;
 
-static void Fatal_Error(const char *msg)
+static void Uart_SendString(const char *msg)
 {
-    ssd1306_draw_text(0u, 0u, "Fatal Error");
-    if (msg != NULL)
+    if (msg == NULL)
     {
-        ssd1306_draw_text(0u, 16u, msg);
+        return;
     }
-    taskDISABLE_INTERRUPTS();
-    for (;;)
-    {
-    }
+
+    (void)Lpuart_Uart_Ip_SyncSend(INST_UART2,
+                                  (const uint8 *)msg,
+                                  (uint32)strlen(msg),
+                                  UART_TX_TIMEOUT_US);
 }
 
 static uint8_t GetNextTxMb(uint8_t inst)
@@ -334,13 +286,6 @@ static void Can_InitOne(uint8_t inst,
 
 static void Can_Init(void)
 {
-    uint16_t i;
-
-    for (i = 0u; i < CAN_STD_ID_COUNT; i++)
-    {
-        gCanIdToIndex[i] = CAN_INDEX_INVALID;
-    }
-
     Can_InitOne(INST_FLEXCAN0, &FlexCAN_State0, &FlexCAN_Config0, &can_rx[0]);
     Can_InitOne(INST_FLEXCAN1, &FlexCAN_State1, &FlexCAN_Config1, &can_rx[1]);
     Can_InitOne(INST_FLEXCAN2, &FlexCAN_State2, &FlexCAN_Config2, &can_rx[2]);
@@ -369,163 +314,10 @@ void Uart2_handler(void){
 	Lpuart_Uart_Ip_IrqHandler(INST_UART2);
 }
 
-/* ========================= CACHE ========================= */
 
-static inline uint32_t CanHash(uint32_t id)
-{
-    return id & (CAN_CACHE_SIZE - 1u);
-}
-
-static CanFrameEntry *CanCache_FindOrCreate(uint8_t bus, uint32_t id)
-{
-    uint32_t index = CanHash(id);
-    uint32_t start = index;
-
-    while (1)
-    {
-        CanFrameEntry *entry;
-
-        if (bus == 0u)       { entry = &gCan0Cache.entries[index]; }
-        else if (bus == 1u)  { entry = &gCan1Cache.entries[index]; }
-        else if (bus == 3u)  { entry = &gCan3Cache.entries[index]; }
-        else                 { return NULL; }
-
-        if (entry->used == 0u)
-        {
-            entry->bus = bus;
-            return entry;
-        }
-        else if (entry->id == id)
-        {
-            return entry;
-        }
-
-        index = (index + 1u) & (CAN_CACHE_SIZE - 1u);
-        if (index == start)
-        {
-            return NULL;  /* cache full */
-        }
-    }
-}
-
-static void CanCache_UpdateFromISR(uint8_t bus, const Flexcan_Ip_MsgBuffType *rxMsg)
-{
-    uint32_t id;
-    uint8_t dlc;
-    CanFrameEntry *entry;
-    UBaseType_t savedInterruptStatus;
-
-    id = rxMsg->msgId;
-    dlc = rxMsg->dataLen;
-
-    savedInterruptStatus = taskENTER_CRITICAL_FROM_ISR();
-
-    entry = CanCache_FindOrCreate(bus, id);
-    if (entry != NULL)
-    {
-        entry->dlc = dlc;
-        entry->id = id;
-        entry->used = 1u;
-        (void)memcpy(entry->data, rxMsg->data, dlc);
-        if (dlc < 8u)
-        {
-            (void)memset(&entry->data[dlc], 0, (8u - dlc));
-        }
-
-        entry->valid = TRUE;
-        entry->timestamp = rxMsg->time_stamp;
-        entry->decode_flag = 1u;
-        entry->lastRxTick = xTaskGetTickCountFromISR();
-    }
-    else
-    {
-        gStats.canCacheOverflow++;
-    }
-
-    taskEXIT_CRITICAL_FROM_ISR(savedInterruptStatus);
-}
-
-static void CanCache_RefreshValidity(void)
-{
-    TickType_t now;
-    size_t i;
-    now = xTaskGetTickCount();
-
-    taskENTER_CRITICAL();
-    for(i = 0u; i < CAN_CACHE_SIZE; i++){
-        if(gCan0Cache.entries[i].used != 0u){
-            if((now - gCan0Cache.entries[i].lastRxTick) > CAN_DEFAULT_TIMEOUT){
-                gCan0Cache.entries[i].valid = FALSE;
-            }else{
-                gCan0Cache.entries[i].valid = TRUE;
-            }
-        }
-        if(gCan1Cache.entries[i].used != 0u){
-            if((now - gCan1Cache.entries[i].lastRxTick) > CAN_DEFAULT_TIMEOUT){
-                gCan1Cache.entries[i].valid = FALSE;
-            }else{
-                gCan1Cache.entries[i].valid = TRUE;
-            }
-        }
-        if(gCan3Cache.entries[i].used != 0u){
-            if((now - gCan3Cache.entries[i].lastRxTick) > CAN_DEFAULT_TIMEOUT){
-                gCan3Cache.entries[i].valid = FALSE;
-            }else{
-                gCan3Cache.entries[i].valid = TRUE;
-            }
-        }
-    }
-    taskEXIT_CRITICAL();
-}
-
-static void insertMsgToCache(void){
-    uint8_t i = 0;
-    for(i; i<MESSAGE_COUNT; i++){
-        gMsgMapBus0[i].id = message_table[i].id;
-        gMsgMapBus0[i].used = 1u;
-        gMsgMapBus0[i].msg_index = i;
-        gMsgMapBus1[i].id = message_table[i].id;
-        gMsgMapBus1[i].used = 1u;
-        gMsgMapBus1[i].msg_index = i;
-    }
-}
-
-static void CanCache_Fetch(CanFrameCache *cache, uint32_t id, uint32_t *index)
-{
-    uint32_t start = CanHash(id);
-    uint32_t i = start;
-
-    if(cache == NULL) {return 0u;}
-
-    taskENTER_CRITICAL();
-    while (1)
-    {
-        CanFrameEntry *entry = &cache->entries[index];
-        if(entry->used != 0u && entry->id == id){
-            if(entry->valid == TRUE){
-                *index = i;
-                entry->decode_flag = 0u;
-                return;
-            }
-        }
-        else if (c->entries[i].id == id)
-        {
-            *index = i;
-            return;  /* found */
-        }
-
-        i = (i + 1u) & (CAN_CACHE_SIZE - 1u);
-        if (i == start)
-        {
-            return;  /* not found, full loop */
-        }
-    }
-    taskEXIT_CRITICAL();
-}
-
-void FlexcanCar_callback(uint8 instance,
+void FlexcanCar_callback(uint8_t instance,
                          Flexcan_Ip_EventType eventType,
-                         uint32 buffIdx,
+                         uint32_t buffIdx,
                          const Flexcan_Ip_StateType *state)
 {
     (void)state;
@@ -543,9 +335,9 @@ void FlexcanCar_callback(uint8 instance,
     }
 }
 
-void FlexcanPC_callback(uint8 instance,
+void FlexcanPC_callback(uint8_t instance,
                         Flexcan_Ip_EventType eventType,
-                        uint32 buffIdx,
+                        uint32_t buffIdx,
                         const Flexcan_Ip_StateType *state)
 {
     (void)state;
@@ -561,9 +353,9 @@ void FlexcanPC_callback(uint8 instance,
     }
 }
 
-void EPS_callback(uint8 instance,
+void EPS_callback(uint8_t instance,
                   Flexcan_Ip_EventType eventType,
-                  uint32 buffIdx,
+                  uint32_t buffIdx,
                   const Flexcan_Ip_StateType *state)
 {
     (void)state;
@@ -604,7 +396,7 @@ void vApplicationMallocFailedHook(void)
 static void StaticDSUTask(void *pv)
 {
     TickType_t lastWakeTime;
-    const size_t num_msgs = sizeof(PRIUS_DSU_MSGS_C) / sizeof(PRIUS_DSU_MSGS_C[0]);
+    const size_t num_msgs = PRIUS_DSU_MSGS_C_COUNT;
     uint32_t tick10ms = 0u;
     Flexcan_Ip_DataInfoType tx;
     uint8_t payload[8];
@@ -639,7 +431,6 @@ static void StaticDSUTask(void *pv)
                 }
             }
         }
-
         tick10ms++;
         vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(10u));
     }
@@ -662,23 +453,50 @@ static void CacheMonitorTask(void *pv)
 static void DecoderTask(void *pv)
 {
     (void)pv;
-    MessageHandler();
-}
-static void MessageHandler(void)
-{
-    TickType_t lastWakeTime = xTaskGetTickCount();
-    uint32_t index;
-    uint16_t i, s;
+    CarState_clear(&gCarState);
     for(;;){
-        for(i = 0; i<MESSAGE_COUNT; i++){
-            if(gMsgMapBus0[i].used == 0u) { continue;}
-            if(CanCache_Fetch(&gCan0Cache, gMsgMapBus0[i].id, &index) == 0){
-                continue;
-            }{
-                DecodeMessage(index);
-            }
+        ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10u));
+        CarState_update(&gCarState);
+    }
+}
+
+static void UartTask(void *pv)
+{
+    TickType_t lastWakeTime;
+    CarState snap;
+    char line[256];
+    int n;
+
+    (void)pv;
+    lastWakeTime = xTaskGetTickCount();
+
+    for (;;)
+    {
+        taskENTER_CRITICAL();
+        (void)memcpy(&snap, &gCarState, sizeof(snap));
+        taskEXIT_CRITICAL();
+
+        n = snprintf(line,
+                     sizeof(line),
+                     "v=%.2f a=%.2f steer=%.1f rpm=%.0f gas=%.1f gear=%u brk=%u abs=%u tc=%u\r\n",
+                     (double)snap.out.vEgo,
+                     (double)snap.out.aEgo,
+                     (double)snap.out.steeringAngleDeg,
+                     (double)snap.engine_rpm,
+                     (double)snap.gas_pedal,
+                     (unsigned int)snap.gear,
+                     (unsigned int)snap.brake_pressed,
+                     (unsigned int)snap.abs_active,
+                     (unsigned int)snap.traction_control_active);
+
+        if (n > 0)
+        {
+            Uart_SendString(line);
         }
-    }   
+
+
+        vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(UART_TELEM_PERIOD_MS));
+    }
 }
 /* ========================= MAIN ======================== */
 
@@ -699,7 +517,6 @@ int main(void)
     ssd1306_draw_text(0u, 0u, "Booting");
     Transceivers_Enable();
     Can_Init();
-    insertMsgToCache();
     if (xTaskCreate(StaticDSUTask, "Static_DSU", 1024u, NULL, 4u, NULL) != pdPASS)
     {
         Fatal_Error("DSU task fail");
@@ -713,6 +530,11 @@ int main(void)
     if (xTaskCreate(DecoderTask, "Decoder", 1024u, NULL, 4u, NULL) != pdPASS)
     {
         Fatal_Error("Decoder fail");
+    }
+
+    if (xTaskCreate(UartTask, "UartTelem", 1024u, NULL, 3u, NULL) != pdPASS)
+    {
+        Fatal_Error("UartTelem fail");
     }
 
     ssd1306_draw_text(0u, 0u, "Initialized");
