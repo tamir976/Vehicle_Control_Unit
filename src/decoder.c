@@ -131,17 +131,17 @@ static uint8_t DecodeBoolBE(const uint8_t data[8], uint16_t startBit){
 static void DecodeSpeed(CarState *cs){
     const CanFrameEntry *entry = FindFrameByBus(ID_SPEED);
     if(entry == NULL) return;
-    float speed = DecodePhysLE(entry->data, 0u, 16u, 0u, 0.01f, 0.0f);
+    float speed = DecodePhysBE(entry->data, 47u, 16u, 0u, 0.01f, 0.0f);
     cs->out.vEgo = speed;
     cs->last_update_tick = entry->lastRxTick;
 }
 static void DecodeWheelSpeeds(CarState *cs){
     const CanFrameEntry *entry = FindFrameByBus(ID_WHEEL_SPEEDS);
     if(entry == NULL) return;
-    cs->wheel_speed_fl = DecodePhysLE(entry->data, 7u, 16u, 0u, 0.01f, -67.67f);
-    cs->wheel_speed_fr = DecodePhysLE(entry->data, 23u, 16u, 0u, 0.01f, -67.67f);
-    cs->wheel_speed_rl = DecodePhysLE(entry->data, 39u, 16u, 0u, 0.01f, -67.67f);
-    cs->wheel_speed_rr = DecodePhysLE(entry->data, 55u, 16u, 0u, 0.01f, -67.67f);
+    cs->wheel_speed_fr = DecodePhysBE(entry->data, 7u, 16u, 0u, 0.01f, -67.67f);
+    cs->wheel_speed_fl = DecodePhysBE(entry->data, 23u, 16u, 0u, 0.01f, -67.67f);
+    cs->wheel_speed_rr = DecodePhysBE(entry->data, 39u, 16u, 0u, 0.01f, -67.67f);
+    cs->wheel_speed_rl = DecodePhysBE(entry->data, 55u, 16u, 0u, 0.01f, -67.67f);
 }
 static void DecodeSteering(CarState *cs){
     const CanFrameEntry *angle = FindFrameByBus(ID_STEER_ANGLE_SENSOR);
@@ -196,40 +196,40 @@ static void DecodeSteering(CarState *cs){
 static void DecodeDynamic(CarState *cs){
     const CanFrameEntry *entry = FindFrameByBus(ID_KINEMATICS);
     if(entry == NULL) return;
-    cs->accel_x = DecodePhysLE(entry->data, 17u, 10u, 0u, 0.03589f, -18.375f);
-    cs->accel_y = DecodePhysLE(entry->data, 33u, 10u, 0u, 0.03589f, -18.375f);
-    cs->yaw_rate = DecodePhysLE(entry->data, 1u, 10u, 0u, 0.244f, -125.0f);
+    cs->accel_x = DecodePhysBE(entry->data, 17u, 10u, 0u, 0.03589f, -18.375f);
+    cs->accel_y = DecodePhysBE(entry->data, 33u, 10u, 0u, 0.03589f, -18.375f);
+    cs->yaw_rate = DecodePhysBE(entry->data, 1u, 10u, 0u, 0.244f, -125.0f);
     cs->out.aEgo = cs->accel_x;
 }
 static void DecodeEngineAndPedal(CarState *cs){
     const CanFrameEntry *rpm_entry = FindFrameByBus(ID_ENGINE_RPM);
     const CanFrameEntry *gas_entry = FindFrameByBus(ID_GAS_PEDAL_HYBRID);
     if(rpm_entry != NULL){
-        cs->engine_rpm = DecodePhysLE(rpm_entry->data, 7u, 16u, 1u, 0.78125f, 0.0f);
+        cs->engine_rpm = DecodePhysBE(rpm_entry->data, 7u, 16u, 1u, 0.78125f, 0.0f);
     }
     if(gas_entry != NULL){
-        cs->gas_pedal = DecodePhysLE(gas_entry->data, 23u, 8u, 0u, 0.005f, 0.0f);
+        cs->gas_pedal = DecodePhysBE(gas_entry->data, 23u, 8u, 0u, 0.005f, 0.0f);
     }
 }
 static void DecodeGear(CarState *cs){
     const CanFrameEntry *entry = FindFrameByBus(ID_GEAR_PACKET);
     if(entry == NULL) return;
-    cs->gear = (uint8_t)ExtractUnsignedLE(entry->data, 13u, 6u);
+    cs->gear = (uint8_t)ExtractUnsignedBE(entry->data, 13u, 6u);
 }
 
 static void DecodeCruise(CarState *cs){
     const CanFrameEntry *pcm2_entry = FindFrameByBus(ID_PCM_CRUISE_2);
     const CanFrameEntry *pcmsm_entry = FindFrameByBus(ID_PCM_CRUISE_SM);
     if(pcm2_entry != NULL){
-        cs->brake_pressed = DecodeBoolLE(pcm2_entry->data, 3u);
-        cs->pcm_follow_distance = (uint8_t)ExtractUnsignedLE(pcm2_entry->data, 12u, 2u);
-        uint8_t main_on = DecodeBoolLE(pcm2_entry->data, 15u);
+        cs->brake_pressed = DecodeBoolBE(pcm2_entry->data, 3u);
+        cs->pcm_follow_distance = (uint8_t)ExtractUnsignedBE(pcm2_entry->data, 12u, 2u);
+        uint8_t main_on = DecodeBoolBE(pcm2_entry->data, 15u);
         if(!main_on){
               cs->out.cruiseState.enabled = 0u;
         }
     }
     if(pcmsm_entry != NULL){
-        uint8_t cruiseState = (uint8_t)ExtractUnsignedLE(pcmsm_entry->data, 11u, 4u);
+        uint8_t cruiseState = (uint8_t)ExtractUnsignedBE(pcmsm_entry->data, 11u, 4u);
         cs->out.cruiseState.enabled = (cruiseState == 6u) ? 1u : 0u;
     }
 }
@@ -237,13 +237,13 @@ static void DecodeBody(CarState *cs){
     const CanFrameEntry *body = FindFrameByBus(ID_BODY_CONTROL_STATE);
     const CanFrameEntry *blinkers = FindFrameByBus(ID_BLINKERS_STATE);
     if(body != NULL){
-        cs->door_open_fl = DecodeBoolLE(body->data, 45u);
-        cs->door_open_fr = DecodeBoolLE(body->data, 44u);
-        cs->door_open_rl = DecodeBoolLE(body->data, 42u);
-        cs->door_open_rr = DecodeBoolLE(body->data, 43u);
+        cs->door_open_fl = DecodeBoolBE(body->data, 45u);
+        cs->door_open_fr = DecodeBoolBE(body->data, 44u);
+        cs->door_open_rl = DecodeBoolBE(body->data, 42u);
+        cs->door_open_rr = DecodeBoolBE(body->data, 43u);
     }
     if(blinkers != NULL){
-        uint8_t turn = (uint8_t)ExtractUnsignedLE(blinkers->data, 29u, 2u);
+        uint8_t turn = (uint8_t)ExtractUnsignedBE(blinkers->data, 29u, 2u);
         cs->left_blinker = (turn == 1u) ? 1u : 0u;
         cs->right_blinker = (turn == 2u) ? 1u : 0u;
     }
@@ -252,21 +252,21 @@ static void DecodeBody(CarState *cs){
 static void DecodeVsc(CarState *cs){
     const CanFrameEntry *entry = FindFrameByBus(ID_VSC1S07);
     if(entry == NULL) return;
-    cs->abs_active = DecodeBoolLE(entry->data, 2u);
-    cs->traction_control_active = DecodeBoolLE(entry->data, 1u);
-    cs->gvc = DecodePhysLE(entry->data, 39u, 8u, 1u, 0.04f, 0.0f);
+    cs->abs_active = DecodeBoolBE(entry->data, 2u);
+    cs->traction_control_active = DecodeBoolBE(entry->data, 1u);
+    cs->gvc = DecodePhysBE(entry->data, 39u, 8u, 1u, 0.04f, 0.0f);
     cs->eps_active = 0u;
 }
 
 static void DecodeAccControl(CarState *cs){
     const CanFrameEntry *entry = FindFrameByBus(ID_ACC_CONTROL);
     if(entry == NULL) return;
-    cs->acc_type = (uint8_t)ExtractUnsignedLE(entry->data, 23u, 2u);
+    cs->acc_type = (uint8_t)ExtractUnsignedBE(entry->data, 23u, 2u);
 }
 static void DecodeIpas(CarState *cs){
     const CanFrameEntry *entry = FindFrameByBus(ID_STEERING_IPAS);
     if(entry == NULL) return;
-    uint8_t state = (uint8_t)ExtractUnsignedLE(entry->data, 7u, 4u);
+    uint8_t state = (uint8_t)ExtractUnsignedBE(entry->data, 7u, 4u);
     cs->ipas_active = state == 3u ? 1u : 0u;
 }
 
