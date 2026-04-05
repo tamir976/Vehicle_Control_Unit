@@ -29,117 +29,15 @@
 #include "include/car_state.h"
 #include "include/can_frame.h"
 #include "include/decoder.h"
-
-#define INST_FLEXCAN0 (0u)
-#define INST_FLEXCAN1 (1u)
-#define INST_FLEXCAN2 (2u)
-#define INST_FLEXCAN3 (3u)
-#define INST_FLEXCAN4 (4u)
-#define INST_FLEXCAN5 (5u)
-#define INST_I2C (0u)
-#define INST_UART2 (2)
-
-#define CAN_RX_MB (0u)
-
-#define CAN_TX_MB1 (1u)
-#define CAN_TX_MB2 (2u)
-#define CAN_TX_MB3 (3u)
-#define CAN_TX_MB4 (4u)
-#define CAN_TX_MB5 (5u)
-#define CAN_TX_MB6 (6u)
-#define CAN_TX_MB7 (7u)
-#define CAN_TX_MB8 (8u)
-#define CAN_TX_MB9 (9u)
-#define CAN_TX_MB10 (10u)
-#define CAN_TX_MB11 (11u)
-#define CAN_TX_MB12 (12u)
-#define CAN_TX_MB13 (13u)
-#define CAN_TX_MB14 (14u)
-#define CAN_TX_MB15 (15u)
-#define CAN_TX_MB16 (16u)
-#define CAN_TX_MB17 (17u)
-#define CAN_TX_MB18 (18u)
-#define CAN_TX_MB19 (19u)
-#define CAN_TX_MB20 (20u)
-#define CAN_TX_MB21 (21u)
-#define CAN_TX_MB22 (22u)
-#define CAN_TX_MB23 (23u)
-#define CAN_TX_MB24 (24u)
-#define CAN_TX_MB25 (25u)
-#define CAN_TX_MB26 (26u)
-#define CAN_TX_MB27 (27u)
-#define CAN_TX_MB28 (28u)
-#define CAN_TX_MB29 (29u)
-#define CAN_TX_MB30 (30u)
-#define CAN_TX_MB31 (31u)
-
-#define CAN_TX_MB_COUNT_32  (22u)
-#define CAN_TX_MB_COUNT_16  (15u)
-#define PRIUS_SPEED_MSGID   (0x0B4u)
-#define PRIUS_GEAR_MSGID    (0x127u)
-#define UART_TX_TIMEOUT_US  (50000u)
-#define UART_TELEM_PERIOD_MS (100u)
-
-static const uint8_t PRIUS_SPEED_MSG_DATA[8] = {0x30, 0x00, 0x00, 0x74, 0x00, 0x00, 0x00, 0x00};
-static const uint8_t PRIUS_GEAR_MSG_DATA[8]  = {0x07, 0xA0, 0x1F, 0x00, 0x08, 0x00, 0x10, 0x00};
+#include "include/flexcan_conf.h"
+#include "include/hacked_panda.h"
+#include "include/car_control.h"
+#include "include/control.h"
 
 #define TJA1153_START_ID    (0x555u)
 #define TJA1153_CONFIG_ID   (0x18DA00F1u)
 
-static volatile boolean can_rx_flag[6];
-static Flexcan_Ip_MsgBuffType can_rx[6];
-static uint8_t txMbNext[6] = {0u};
-static CarState gCarState;
-
 volatile int exit_code = 0;
-
-static void Uart_SendString(const char *msg)
-{
-    if (msg == NULL)
-    {
-        return;
-    }
-
-    (void)Lpuart_Uart_Ip_SyncSend(INST_UART2,
-                                  (const uint8 *)msg,
-                                  (uint32)strlen(msg),
-                                  UART_TX_TIMEOUT_US);
-}
-
-static uint8_t GetNextTxMb(uint8_t inst)
-{
-    static const uint8_t txMbList32[CAN_TX_MB_COUNT_32] =
-    {
-        CAN_TX_MB10, CAN_TX_MB11, CAN_TX_MB12, CAN_TX_MB13, CAN_TX_MB14, CAN_TX_MB15,
-        CAN_TX_MB16, CAN_TX_MB17, CAN_TX_MB18, CAN_TX_MB19, CAN_TX_MB20, CAN_TX_MB21,
-        CAN_TX_MB22, CAN_TX_MB23, CAN_TX_MB24, CAN_TX_MB25, CAN_TX_MB26, CAN_TX_MB27,
-        CAN_TX_MB28, CAN_TX_MB29, CAN_TX_MB30, CAN_TX_MB31
-    };
-
-    static const uint8_t txMbList16[CAN_TX_MB_COUNT_16] =
-    {
-        CAN_TX_MB1, CAN_TX_MB2, CAN_TX_MB3, CAN_TX_MB4, CAN_TX_MB5,
-        CAN_TX_MB6, CAN_TX_MB7, CAN_TX_MB8, CAN_TX_MB9, CAN_TX_MB10,
-        CAN_TX_MB11, CAN_TX_MB12, CAN_TX_MB13, CAN_TX_MB14, CAN_TX_MB15
-    };
-
-    const uint8_t *txMbList = txMbList32;
-    uint8_t txMbCount = CAN_TX_MB_COUNT_32;
-    uint8_t mb;
-
-    if ((inst == INST_FLEXCAN2) || (inst == INST_FLEXCAN4) || (inst == INST_FLEXCAN5))
-    {
-        txMbList = txMbList16;
-        txMbCount = CAN_TX_MB_COUNT_16;
-    }
-
-    taskENTER_CRITICAL();
-    mb = txMbList[txMbNext[inst] % txMbCount];
-    txMbNext[inst] = (uint8_t)((txMbNext[inst] + 1u) % txMbCount);
-    taskEXIT_CRITICAL();
-
-    return mb;
-}
 
 static void Transceivers_Enable(void)
 {
@@ -179,72 +77,36 @@ static void SetupCan_TJA1153(void) {
 	txi.is_polling = TRUE;
 	txi.is_remote = FALSE;
 	/* CAN4 */
-	(void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN4, CAN_TX_MB1, &txi, TJA1153_START_ID, d, 1000u);
+	(void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN4, GetTxMB(INST_FLEXCAN4), &txi, TJA1153_START_ID, d, 1000u);
 	d[0] = 0x10; d[1] = 0x00; d[2] = 0x9F; d[3] = 0xFF; d[4] = 0xFF; d[5] = 0xFF;
 	txi.msg_id_type = FLEXCAN_MSG_ID_EXT;
 	txi.data_length = 6u;
-	(void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN4, CAN_TX_MB1, &txi, TJA1153_CONFIG_ID, d, 1000u);
+	(void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN4, GetTxMB(INST_FLEXCAN4), &txi, TJA1153_CONFIG_ID, d, 1000u);
 	d[0] = 0x10; d[1] = 0x01; d[2] = 0xC0; d[3] = 0x00; d[4] = 0x00; d[5] = 0x00;
-	(void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN4, CAN_TX_MB1, &txi, TJA1153_CONFIG_ID, d, 1000u);
+	(void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN4, GetTxMB(INST_FLEXCAN4), &txi, TJA1153_CONFIG_ID, d, 1000u);
 	d[0] = 0x10; d[1] = 0x02; d[2] = 0x50; d[3] = 0x00; d[4] = 0x07; d[5] = 0xFF;
-	(void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN4, CAN_TX_MB1, &txi, TJA1153_CONFIG_ID, d, 1000u);
+	(void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN4, GetTxMB(INST_FLEXCAN4), &txi, TJA1153_CONFIG_ID, d, 1000u);
 	d[0] = 0x71; d[1] = 0x02; d[2] = 0x50; d[3] = 0x00; d[4] = 0x05; d[5] = 0x06; d[6] = 0x07; d[7] = 0x08;
 	txi.data_length = 8u;
-	(void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN4, CAN_TX_MB1, &txi, TJA1153_CONFIG_ID, d, 1000u);
+	(void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN4, GetTxMB(INST_FLEXCAN4), &txi, TJA1153_CONFIG_ID, d, 1000u);
 	Siul2_Dio_Ip_WritePin(can4_stb_PORT, can4_stb_PIN, STD_HIGH);
 	/* CAN5 */
 	(void)memset(d, 0, sizeof(d));
 	txi.msg_id_type = FLEXCAN_MSG_ID_STD;
 	txi.data_length = 8u;
-	(void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN5, CAN_TX_MB1, &txi, TJA1153_START_ID, d, 1000u);
+	(void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN5, GetTxMB(INST_FLEXCAN5), &txi, TJA1153_START_ID, d, 1000u);
 	d[0] = 0x10; d[1] = 0x00; d[2] = 0x9F; d[3] = 0xFF; d[4] = 0xFF; d[5] = 0xFF;
 	txi.msg_id_type = FLEXCAN_MSG_ID_EXT;
 	txi.data_length = 6u;
-	(void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN5, CAN_TX_MB1, &txi, TJA1153_CONFIG_ID, d, 1000u);
+	(void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN5, GetTxMB(INST_FLEXCAN5), &txi, TJA1153_CONFIG_ID, d, 1000u);
 	d[0] = 0x10; d[1] = 0x01; d[2] = 0xC0; d[3] = 0x00; d[4] = 0x00; d[5] = 0x00;
-	(void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN5, CAN_TX_MB1, &txi, TJA1153_CONFIG_ID, d, 1000u);
+	(void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN5, GetTxMB(INST_FLEXCAN5), &txi, TJA1153_CONFIG_ID, d, 1000u);
 	d[0] = 0x10; d[1] = 0x02; d[2] = 0x50; d[3] = 0x00; d[4] = 0x07; d[5] = 0xFF;
-	(void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN5, CAN_TX_MB1, &txi, TJA1153_CONFIG_ID, d, 1000u);
+	(void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN5, GetTxMB(INST_FLEXCAN5), &txi, TJA1153_CONFIG_ID, d, 1000u);
 	d[0] = 0x71; d[1] = 0x02; d[2] = 0x50; d[3] = 0x00; d[4] = 0x05; d[5] = 0x06; d[6] = 0x07; d[7] = 0x08;
 	txi.data_length = 8u;
-	(void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN5, CAN_TX_MB1, &txi, TJA1153_CONFIG_ID, d, 1000u);
+	(void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN5, GetTxMB(INST_FLEXCAN5), &txi, TJA1153_CONFIG_ID, d, 1000u);
 	Siul2_Dio_Ip_WritePin(can5_stb_PORT, can5_stb_PIN, STD_HIGH);
-}
-
-static void ForwardFrame(uint8_t fromInst, uint8_t toInst, const Flexcan_Ip_MsgBuffType *m)
-{
-    Flexcan_Ip_DataInfoType txi;
-    uint8_t payload[8];
-    Flexcan_Ip_StatusType st;
-
-    uint8_t dlc = m->dataLen;
-    uint32_t id = m->msgId;
-    (void)memcpy(payload, m->data, dlc);
-
-    if ((fromInst == INST_FLEXCAN4) && (toInst == INST_FLEXCAN5))
-    {
-        if (id == PRIUS_SPEED_MSGID)
-        {
-            (void)memcpy(payload, PRIUS_SPEED_MSG_DATA, 8u);
-            dlc = 8u;
-        }
-        else if (id == PRIUS_GEAR_MSGID)
-        {
-            (void)memcpy(payload, PRIUS_GEAR_MSG_DATA, 8u);
-            dlc = 8u;
-        }
-    }
-
-    txi.msg_id_type = FLEXCAN_MSG_ID_STD;
-    txi.is_polling  = FALSE;
-    txi.data_length = dlc;
-    txi.is_remote   = FALSE;
-
-    st = FlexCAN_Ip_Send(toInst, GetNextTxMb(toInst), &txi, id, payload);
-    if (st != FLEXCAN_STATUS_SUCCESS)
-    {
-        gStats.canTxFails++;
-    }
 }
 
 static void Can_InitOne(uint8_t inst,
@@ -259,6 +121,7 @@ static void Can_InitOne(uint8_t inst,
     rxStd.data_length = 8u;
     rxStd.is_polling  = FALSE;
     rxStd.is_remote   = FALSE;
+    rxStd.fd_enable   = FALSE;
 
     st = FlexCAN_Ip_Init(inst, state, config);
     if (st != FLEXCAN_STATUS_SUCCESS) { gStats.canInitFails++; Fatal_Error("CAN init fail"); }
@@ -267,14 +130,13 @@ static void Can_InitOne(uint8_t inst,
     if (st != FLEXCAN_STATUS_SUCCESS) { gStats.canInitFails++; Fatal_Error("Freeze fail"); }
 
     (void)FlexCAN_Ip_SetRxMaskType(inst, FLEXCAN_RX_MASK_INDIVIDUAL);
-    (void)FlexCAN_Ip_SetRxIndividualMask(inst, CAN_RX_MB, 0x00000000u);
-
-    st = FlexCAN_Ip_ConfigRxMb(inst, CAN_RX_MB, &rxStd, 0x000u);
-    if (st != FLEXCAN_STATUS_SUCCESS) { gStats.canInitFails++; Fatal_Error("Rx MB cfg fail"); }
-
-    st = FlexCAN_Ip_Receive(inst, CAN_RX_MB, rxMb, FALSE);
-    if (st != FLEXCAN_STATUS_SUCCESS) { gStats.canInitFails++; Fatal_Error("Rx start fail"); }
-
+    for(uint8_t i = 0u; i < CAN_RX_SIZE; i++){
+        (void)FlexCAN_Ip_SetRxIndividualMask(inst, i, 0x00000000u);
+        st = FlexCAN_Ip_ConfigRxMb(inst, i, &rxStd, 0x000u);
+        if (st != FLEXCAN_STATUS_SUCCESS) { gStats.canInitFails++; Fatal_Error("Rx MB cfg fail"); }
+        st = FlexCAN_Ip_Receive(inst, i, &rxMb[i], FALSE);
+        if (st != FLEXCAN_STATUS_SUCCESS) { gStats.canInitFails++; Fatal_Error("Rx MB start fail"); }
+    }
     st = FlexCAN_Ip_ExitFreezeMode(inst);
     if (st != FLEXCAN_STATUS_SUCCESS) { gStats.canInitFails++; Fatal_Error("Exit freeze fail"); }
 
@@ -286,24 +148,33 @@ static void Can_InitOne(uint8_t inst,
 
 static void Can_Init(void)
 {
-    Can_InitOne(INST_FLEXCAN0, &FlexCAN_State0, &FlexCAN_Config0, &can_rx[0]);
-    Can_InitOne(INST_FLEXCAN1, &FlexCAN_State1, &FlexCAN_Config1, &can_rx[1]);
-    Can_InitOne(INST_FLEXCAN2, &FlexCAN_State2, &FlexCAN_Config2, &can_rx[2]);
-    Can_InitOne(INST_FLEXCAN3, &FlexCAN_State3, &FlexCAN_Config3, &can_rx[3]);
-    Can_InitOne(INST_FLEXCAN4, &FlexCAN_State4, &FlexCAN_Config4, &can_rx[4]);
-    Can_InitOne(INST_FLEXCAN5, &FlexCAN_State5, &FlexCAN_Config5, &can_rx[5]);
+    Can_InitOne(INST_FLEXCAN0, &FlexCAN_State0, &FlexCAN_Config0, &can_rx[0][0]);
+    Can_InitOne(INST_FLEXCAN1, &FlexCAN_State1, &FlexCAN_Config1, &can_rx[1][0]);
+    Can_InitOne(INST_FLEXCAN2, &FlexCAN_State2, &FlexCAN_Config2, &can_rx[2][0]);
+    Can_InitOne(INST_FLEXCAN3, &FlexCAN_State3, &FlexCAN_Config3, &can_rx[3][0]);
+    Can_InitOne(INST_FLEXCAN4, &FlexCAN_State4, &FlexCAN_Config4, &can_rx[4][0]);
+    Can_InitOne(INST_FLEXCAN5, &FlexCAN_State5, &FlexCAN_Config5, &can_rx[5][0]);
 
     SetupCan_TJA1153();
 }
 
 /* ========================= IRQ HANDLERS ========================= */
 
-void Flexcan0_1_handler(void) { FlexCAN_IRQHandler(INST_FLEXCAN0, 0u, 32u, FALSE); }
-void Flexcan1_1_handler(void) { FlexCAN_IRQHandler(INST_FLEXCAN1, 0u, 32u, FALSE); }
-void Flexcan2_1_handler(void) { FlexCAN_IRQHandler(INST_FLEXCAN2, 0u, 16u, FALSE); }
-void Flexcan3_1_handler(void) { FlexCAN_IRQHandler(INST_FLEXCAN3, 0u, 32u, FALSE); }
-void Flexcan4_1_handler(void) { FlexCAN_IRQHandler(INST_FLEXCAN4, 0u, 16u, FALSE); }
-void Flexcan5_1_handler(void) { FlexCAN_IRQHandler(INST_FLEXCAN5, 0u, 16u, FALSE); }
+void Flexcan0_0_handler(void) { FlexCAN_IRQHandler(INST_FLEXCAN0, 0u, 7u, FALSE); }
+void Flexcan0_1_handler(void) { FlexCAN_IRQHandler(INST_FLEXCAN0, 8u, 31u, FALSE); }
+void Flexcan0_2_handler(void) { FlexCAN_IRQHandler(INST_FLEXCAN0, 32u, 63u, FALSE); }
+void Flexcan0_3_handler(void) { FlexCAN_IRQHandler(INST_FLEXCAN0, 64u, 95u, FALSE); }
+void Flexcan1_0_handler(void) { FlexCAN_IRQHandler(INST_FLEXCAN1, 0u, 7u, FALSE); }
+void Flexcan1_1_handler(void) { FlexCAN_IRQHandler(INST_FLEXCAN1, 8u, 31u, FALSE); }
+void Flexcan1_2_handler(void) { FlexCAN_IRQHandler(INST_FLEXCAN1, 32u, 63u, FALSE); }
+void Flexcan2_0_handler(void) { FlexCAN_IRQHandler(INST_FLEXCAN2, 0u, 7u, FALSE); }
+void Flexcan2_1_handler(void) { FlexCAN_IRQHandler(INST_FLEXCAN2, 8u, 15u, FALSE); }
+void Flexcan3_0_handler(void) { FlexCAN_IRQHandler(INST_FLEXCAN3, 0u, 7u, FALSE); }
+void Flexcan3_1_handler(void) { FlexCAN_IRQHandler(INST_FLEXCAN3, 8u, 31u, FALSE); }
+void Flexcan4_0_handler(void) { FlexCAN_IRQHandler(INST_FLEXCAN4, 0u, 7u, FALSE); }
+void Flexcan4_1_handler(void) { FlexCAN_IRQHandler(INST_FLEXCAN4, 8u, 15u, FALSE); }
+void Flexcan5_0_handler(void) { FlexCAN_IRQHandler(INST_FLEXCAN5, 0u, 7u, FALSE); }
+void Flexcan5_1_handler(void) { FlexCAN_IRQHandler(INST_FLEXCAN5, 8u, 15u, FALSE); }
 
 void I2c0_handler(void)
 {
@@ -321,16 +192,15 @@ void FlexcanCar_callback(uint8_t instance,
                          const Flexcan_Ip_StateType *state)
 {
     (void)state;
-
-    if ((eventType == FLEXCAN_EVENT_RX_COMPLETE) && (buffIdx == CAN_RX_MB))
+    if ((eventType == FLEXCAN_EVENT_RX_COMPLETE))
     {
         if ((instance == INST_FLEXCAN0) ||
             (instance == INST_FLEXCAN1) ||
             (instance == INST_FLEXCAN2))
         {
             can_rx_flag[instance] = TRUE;
-            CanCache_UpdateFromISR(instance, &can_rx[instance]);
-            (void)FlexCAN_Ip_Receive(instance, CAN_RX_MB, &can_rx[instance], FALSE);
+            CanCache_UpdateFromISR(instance, &can_rx[instance][buffIdx]);
+            (void)FlexCAN_Ip_Receive(instance, buffIdx, &can_rx[instance][buffIdx], FALSE);
         }
     }
 }
@@ -342,13 +212,13 @@ void FlexcanPC_callback(uint8_t instance,
 {
     (void)state;
 
-    if ((eventType == FLEXCAN_EVENT_RX_COMPLETE) && (buffIdx == CAN_RX_MB))
+    if ((eventType == FLEXCAN_EVENT_RX_COMPLETE))
     {
         if (instance == INST_FLEXCAN3)
         {
             can_rx_flag[instance] = TRUE;
-            CanCache_UpdateFromISR(instance, &can_rx[instance]);
-            (void)FlexCAN_Ip_Receive(instance, CAN_RX_MB, &can_rx[instance], FALSE);
+            CanCache_UpdateFromISR(instance, &can_rx[instance][buffIdx]);
+            (void)FlexCAN_Ip_Receive(instance, buffIdx, &can_rx[instance][buffIdx], FALSE);
         }
     }
 }
@@ -360,26 +230,80 @@ void EPS_callback(uint8_t instance,
 {
     (void)state;
 
-    if ((eventType == FLEXCAN_EVENT_RX_COMPLETE) && (buffIdx == CAN_RX_MB))
+    if ((eventType == FLEXCAN_EVENT_RX_COMPLETE))
     {
         if ((instance == INST_FLEXCAN4) || (instance == INST_FLEXCAN5))
         {
             can_rx_flag[instance] = TRUE;
             if (instance == INST_FLEXCAN4)
             {
-                ForwardFrame(instance, INST_FLEXCAN5, &can_rx[instance]);
+                ForwardFrame(instance, INST_FLEXCAN5, &can_rx[instance][buffIdx]);
             }
             else
             {
-                ForwardFrame(instance, INST_FLEXCAN4, &can_rx[instance]);
+                ForwardFrame(instance, INST_FLEXCAN4, &can_rx[instance][buffIdx]);
             }
 
-            (void)FlexCAN_Ip_Receive(instance, CAN_RX_MB, &can_rx[instance], FALSE);
+            (void)FlexCAN_Ip_Receive(instance, buffIdx, &can_rx[instance][buffIdx], FALSE);
         }
     }
 }
 
-/* ========================= TASKS ========================= */
+void Flexcan_error_callback(uint8_t instance, Flexcan_Ip_EventType eventType, uint32_t u32ErrStatus, const Flexcan_Ip_StateType *state)
+{
+    (void)state;
+
+    switch(eventType)
+    {
+        case FLEXCAN_EVENT_BUSOFF:
+            gStats.canBusOff[instance]++;
+            can_rx_flag[instance] = FALSE;
+
+            if(FlexCAN_Ip_SetStartMode(instance) == FLEXCAN_STATUS_SUCCESS)
+            {
+                FlexCAN_Ip_EnableInterrupts_Privileged(instance);
+            }
+            else if(instance == INST_FLEXCAN4 || instance == INST_FLEXCAN5)
+            { 
+                Fatal_Error("EPS CAN Bus Off");
+            }
+            else if(instance == INST_FLEXCAN3)
+            {
+                Fatal_Error("PC CAN Bus Off");
+            }
+            else if(instance == INST_FLEXCAN0 || instance == INST_FLEXCAN1 || instance == INST_FLEXCAN2)
+            {
+                Fatal_Error("Car CAN Bus Off");
+            }
+            break;
+
+        case FLEXCAN_EVENT_ERROR:
+        case FLEXCAN_EVENT_ERROR_FAST:
+            gStats.canErrors[instance]++;
+
+            if(u32ErrStatus & (1U << 14)) gStats.canCrcErrors[instance]++;
+            if(u32ErrStatus & (1U << 13)) gStats.canFormErrors[instance]++;
+            if(u32ErrStatus & (1U << 12)) gStats.canStuffErrors[instance]++;
+            break;
+
+        case FLEXCAN_EVENT_RX_WARNING:
+            gStats.canRxWarnings[instance]++;
+            break;
+
+        case FLEXCAN_EVENT_TX_WARNING:
+            gStats.canTxWarnings[instance]++;
+            break;
+
+        case FLEXCAN_EVENT_RXFIFO_OVERFLOW:
+        case FLEXCAN_EVENT_ENHANCED_RXFIFO_OVERFLOW:
+            gStats.canRxFifoOverflow[instance]++;
+            break;
+
+        default:
+            gStats.canUnknownErrors[instance]++;
+            break;
+    }
+}
 
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
 {
@@ -393,111 +317,7 @@ void vApplicationMallocFailedHook(void)
     Fatal_Error("Malloc Failed");
 }
 
-static void StaticDSUTask(void *pv)
-{
-    TickType_t lastWakeTime;
-    const size_t num_msgs = PRIUS_DSU_MSGS_C_COUNT;
-    uint32_t tick10ms = 0u;
-    Flexcan_Ip_DataInfoType tx;
-    uint8_t payload[8];
-    (void)pv;
 
-    lastWakeTime = xTaskGetTickCount();
-
-    tx.is_polling = FALSE;
-    tx.is_remote = FALSE;
-    tx.msg_id_type = FLEXCAN_MSG_ID_STD;
-
-    for (;;)
-    {
-        for (size_t i = 0u; i < num_msgs; i++)
-        {
-            const static_dsu_msg_t *msg = &PRIUS_DSU_MSGS_C[i];
-
-            if ((msg->freq_100 != 0u) && ((tick10ms % msg->freq_100) == 0u))
-            {
-                uint8_t dlc = msg->vl_len;
-                uint8_t bus = msg->bus;
-                uint32_t id = msg->addr;
-                Flexcan_Ip_StatusType st;
-
-                (void)memcpy(payload, msg->vl, dlc);
-                tx.data_length = dlc;
-
-                st = FlexCAN_Ip_Send(bus, GetNextTxMb(bus), &tx, id, payload);
-                if (st != FLEXCAN_STATUS_SUCCESS)
-                {
-                    gStats.canTxFails++;
-                }
-            }
-        }
-        tick10ms++;
-        vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(10u));
-    }
-}
-
-static void CacheMonitorTask(void *pv)
-{
-    TickType_t lastWakeTime;
-    (void)pv;
-
-    lastWakeTime = xTaskGetTickCount();
-
-    for (;;)
-    {
-        CanCache_RefreshValidity();
-        vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(10u));
-    }
-}
-
-static void DecoderTask(void *pv)
-{
-    (void)pv;
-    CarState_clear(&gCarState);
-    for(;;){
-        ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10u));
-        CarState_update(&gCarState);
-    }
-}
-
-static void UartTask(void *pv)
-{
-    TickType_t lastWakeTime;
-    CarState snap;
-    char line[256];
-    int n;
-
-    (void)pv;
-    lastWakeTime = xTaskGetTickCount();
-
-    for (;;)
-    {
-        taskENTER_CRITICAL();
-        (void)memcpy(&snap, &gCarState, sizeof(snap));
-        taskEXIT_CRITICAL();
-
-        n = snprintf(line,
-                     sizeof(line),
-                     "v=%.2f a=%.2f steer=%.1f rpm=%.0f gas=%.1f gear=%u brk=%u abs=%u tc=%u\r\n",
-                     (double)snap.out.vEgo,
-                     (double)snap.out.aEgo,
-                     (double)snap.out.steeringAngleDeg,
-                     (double)snap.engine_rpm,
-                     (double)snap.gas_pedal,
-                     (unsigned int)snap.gear,
-                     (unsigned int)snap.brake_pressed,
-                     (unsigned int)snap.abs_active,
-                     (unsigned int)snap.traction_control_active);
-
-        if (n > 0)
-        {
-            Uart_SendString(line);
-        }
-
-
-        vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(UART_TELEM_PERIOD_MS));
-    }
-}
 /* ========================= MAIN ======================== */
 
 int main(void)
@@ -517,26 +337,24 @@ int main(void)
     ssd1306_draw_text(0u, 0u, "Booting");
     Transceivers_Enable();
     Can_Init();
-    if (xTaskCreate(StaticDSUTask, "Static_DSU", 1024u, NULL, 4u, NULL) != pdPASS)
+    if (xTaskCreate(StaticDSUTask, "Static_DSU", 512u, NULL, 4u, NULL) != pdPASS)
     {
         Fatal_Error("DSU task fail");
     }
 
-    if (xTaskCreate(CacheMonitorTask, "CacheMon", 768u, NULL, 4u, NULL) != pdPASS)
+    if (xTaskCreate(CacheMonitorTask, "CacheMon", 256u, NULL, 4u, NULL) != pdPASS)
     {
         Fatal_Error("CacheMon fail");
     }
 
-    if (xTaskCreate(DecoderTask, "Decoder", 1024u, NULL, 4u, NULL) != pdPASS)
+    if (xTaskCreate(DecoderTask, "Decoder", 2048u, NULL, 4u, NULL) != pdPASS)
     {
         Fatal_Error("Decoder fail");
     }
 
-    if (xTaskCreate(UartTask, "UartTelem", 1024u, NULL, 3u, NULL) != pdPASS)
-    {
-        Fatal_Error("UartTelem fail");
+    if(xTaskCreate(ControlTask, "Control", 2048u, NULL, 4u, NULL)  != pdPASS){
+        Fatal_Error("Control task fail");
     }
-
     ssd1306_draw_text(0u, 0u, "Initialized");
     vTaskStartScheduler();
 

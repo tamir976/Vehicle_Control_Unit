@@ -4,6 +4,7 @@
 
 CanFrameEntry bus0Table[CAN_CACHE_SIZE];
 CanFrameEntry bus1Table[CAN_CACHE_SIZE];
+CanFrameEntry bus2Table[CAN_CACHE_SIZE];
 CanFrameEntry bus3Table[CAN_CACHE_SIZE];
 
 CanFrameCache gCan0Cache =
@@ -13,6 +14,10 @@ CanFrameCache gCan0Cache =
 CanFrameCache gCan1Cache =
 {
     .entries = bus1Table,
+};
+CanFrameCache gCan2Cache =
+{
+    .entries = bus2Table,
 };
 CanFrameCache gCan3Cache =
 {
@@ -29,14 +34,16 @@ static CanFrameEntry *CanCache_FindOrCreate(uint8_t bus, uint32_t id)
     {
         CanFrameEntry *entry;
 
-        if (bus == 0u)       { entry = &gCan0Cache.entries[index]; }
-        else if (bus == 1u)  { entry = &gCan1Cache.entries[index]; }
-        else if (bus == 3u)  { entry = &gCan3Cache.entries[index]; }
-        else                 { return NULL; }
+        if (bus == 0u) { entry = &gCan0Cache.entries[index]; }
+        else if (bus == 1u) { entry = &gCan1Cache.entries[index]; }
+        else if (bus == 2u) {entry = &gCan2Cache.entries[index];}
+        else if (bus == 3u) { entry = &gCan3Cache.entries[index]; }
+        else { return NULL; }
 
         if (entry->used == 0u)
         {
             entry->bus = bus;
+            entry->id = id;
             return entry;
         }
         else if (entry->id == id)
@@ -67,7 +74,6 @@ void CanCache_UpdateFromISR(uint8_t bus, const Flexcan_Ip_MsgBuffType *rxMsg)
     if (entry != NULL)
     {
         entry->dlc = dlc;
-        entry->id = id;
         entry->used = 1u;
         (void)memcpy(entry->data, rxMsg->data, dlc);
         if (dlc < 8u)

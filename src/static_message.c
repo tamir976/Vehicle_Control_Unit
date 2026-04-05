@@ -37,3 +37,35 @@ const static_dsu_msg_t PRIUS_DSU_MSGS_C[] = {
 };
 
 const size_t PRIUS_DSU_MSGS_C_COUNT = sizeof(PRIUS_DSU_MSGS_C) / sizeof(PRIUS_DSU_MSGS_C[0]);
+
+void StaticDSUTask(void *pv){
+    TickType_t lastWakeTime;
+    const size_t num_msgs = PRIUS_DSU_MSGS_C_COUNT;
+    uint32_t tick10ms = 0u;
+    Flexcan_Ip_DataInfoType tx;
+    uint8_t payload[8];
+    (void)pv;
+    lastWakeTime = xTaskGetTickCount();
+    tx.is_polling = FALSE;
+    tx.is_remote = FALSE;
+    tx.msg_id_type = FLEXCAN_MSG_ID_STD;
+    for(;;){
+        for(size_t i = 0u; i<num_msgs; i++){
+            const static_dsu_msg_t *msg = &PRIUS_DSU_MSGS_C[i];
+            if((msg->freq_100 != 0u) && ((tick10ms % msg->freq_100) == 0u)){
+                uint8_t dlc = msg->vl_len;
+                uint8_t bus = msg->bus;
+                uint32_t id = msg->addr;
+                Flexcan_Ip_StatusType st;
+                (void)memcpy(payload, msg->vl, dlc);
+                tx.data_length = dlc;
+                st = FlexCAN_Ip_Send(bus, GetTxMb(bus), &tx, id, payload);
+                if(st != FLEXCAN_STATUS_SUCCESS){
+                    gStats.canTxFails++;
+                }
+            }
+        }
+        tick10ms++;
+        vTaskDelayUntil(&lastWakeTime, portTICK_PERIOD_MS(10u));
+    }
+}

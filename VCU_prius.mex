@@ -1408,7 +1408,7 @@
                            <struct name="0">
                               <setting name="CanHwChannel" value="FLEXCAN_0"/>
                               <setting name="Name" value="FlexCAN_Config0"/>
-                              <setting name="max_num_mb" value="32"/>
+                              <setting name="max_num_mb" value="64"/>
                               <setting name="num_id_filters" value="FLEXCAN_RX_FIFO_ID_FILTERS_8"/>
                               <setting name="is_rx_fifo_needed" value="false"/>
                               <setting name="fd_enable" value="false"/>
@@ -1450,7 +1450,7 @@
                                  <setting name="flexcan_cfg_rJumpwidth" value="2"/>
                               </struct>
                               <setting name="FlexCanCallback" value="FlexcanCar_callback"/>
-                              <setting name="FlexCanErrorCallback" value="NULL_PTR"/>
+                              <setting name="FlexCanErrorCallback" value="Flexcan_error_callback"/>
                               <setting name="num_enhanced_std_id_filters" value="0"/>
                               <setting name="num_enhanced_ext_id_filters" value="0"/>
                               <setting name="num_enhanced_watermark" value="0"/>
@@ -1459,7 +1459,7 @@
                            <struct name="1">
                               <setting name="CanHwChannel" value="FLEXCAN_1"/>
                               <setting name="Name" value="FlexCAN_Config1"/>
-                              <setting name="max_num_mb" value="32"/>
+                              <setting name="max_num_mb" value="64"/>
                               <setting name="num_id_filters" value="FLEXCAN_RX_FIFO_ID_FILTERS_8"/>
                               <setting name="is_rx_fifo_needed" value="false"/>
                               <setting name="fd_enable" value="false"/>
@@ -1501,7 +1501,7 @@
                                  <setting name="flexcan_cfg_rJumpwidth" value="2"/>
                               </struct>
                               <setting name="FlexCanCallback" value="FlexcanCar_callback"/>
-                              <setting name="FlexCanErrorCallback" value="NULL_PTR"/>
+                              <setting name="FlexCanErrorCallback" value="Flexcan_error_callback"/>
                               <setting name="num_enhanced_std_id_filters" value="0"/>
                               <setting name="num_enhanced_ext_id_filters" value="0"/>
                               <setting name="num_enhanced_watermark" value="0"/>
@@ -1552,7 +1552,7 @@
                                  <setting name="flexcan_cfg_rJumpwidth" value="2"/>
                               </struct>
                               <setting name="FlexCanCallback" value="FlexcanCar_callback"/>
-                              <setting name="FlexCanErrorCallback" value="NULL_PTR"/>
+                              <setting name="FlexCanErrorCallback" value="Flexcan_error_callback"/>
                               <setting name="num_enhanced_std_id_filters" value="0"/>
                               <setting name="num_enhanced_ext_id_filters" value="0"/>
                               <setting name="num_enhanced_watermark" value="0"/>
@@ -1603,7 +1603,7 @@
                                  <setting name="flexcan_cfg_rJumpwidth" value="2"/>
                               </struct>
                               <setting name="FlexCanCallback" value="FlexcanPC_callback"/>
-                              <setting name="FlexCanErrorCallback" value="NULL_PTR"/>
+                              <setting name="FlexCanErrorCallback" value="Flexcan_error_callback"/>
                               <setting name="num_enhanced_std_id_filters" value="0"/>
                               <setting name="num_enhanced_ext_id_filters" value="0"/>
                               <setting name="num_enhanced_watermark" value="0"/>
@@ -1654,7 +1654,7 @@
                                  <setting name="flexcan_cfg_rJumpwidth" value="2"/>
                               </struct>
                               <setting name="FlexCanCallback" value="EPS_callback"/>
-                              <setting name="FlexCanErrorCallback" value="NULL_PTR"/>
+                              <setting name="FlexCanErrorCallback" value="Flexcan_error_callback"/>
                               <setting name="num_enhanced_std_id_filters" value="0"/>
                               <setting name="num_enhanced_ext_id_filters" value="0"/>
                               <setting name="num_enhanced_watermark" value="0"/>
@@ -1705,7 +1705,7 @@
                                  <setting name="flexcan_cfg_rJumpwidth" value="2"/>
                               </struct>
                               <setting name="FlexCanCallback" value="EPS_callback"/>
-                              <setting name="FlexCanErrorCallback" value="NULL_PTR"/>
+                              <setting name="FlexCanErrorCallback" value="Flexcan_error_callback"/>
                               <setting name="num_enhanced_std_id_filters" value="0"/>
                               <setting name="num_enhanced_ext_id_filters" value="0"/>
                               <setting name="num_enhanced_watermark" value="0"/>
@@ -1723,7 +1723,7 @@
                         </struct>
                         <struct name="timeout">
                            <setting name="Name" value="FlexCAN_Timeout"/>
-                           <setting name="timeout_type" value="OSIF_COUNTER_DUMMY"/>
+                           <setting name="timeout_type" value="OSIF_COUNTER_SYSTEM"/>
                            <setting name="timeout_value" value="10000"/>
                         </struct>
                      </config_set>
@@ -1792,60 +1792,123 @@
                               <setting name="Name" value="IntCtrlConfig_0"/>
                               <array name="PlatformIsrConfig">
                                  <struct name="0">
-                                    <setting name="Name" value="PlatformIsrConfig_1"/>
+                                    <setting name="Name" value="can0_irq_conf_8_31"/>
                                     <setting name="IsrName" value="FlexCAN0_1_IRQn"/>
                                     <setting name="IsrEnabled" value="true"/>
                                     <setting name="IsrPriority" value="5"/>
                                     <setting name="IsrHandler" value="Flexcan0_1_handler"/>
                                  </struct>
                                  <struct name="1">
-                                    <setting name="Name" value="PlatformIsrConfig_5"/>
+                                    <setting name="Name" value="can1_irq_conf_8_31"/>
                                     <setting name="IsrName" value="FlexCAN1_1_IRQn"/>
                                     <setting name="IsrEnabled" value="true"/>
                                     <setting name="IsrPriority" value="5"/>
                                     <setting name="IsrHandler" value="Flexcan1_1_handler"/>
                                  </struct>
                                  <struct name="2">
-                                    <setting name="Name" value="PlatformIsrConfig_8"/>
+                                    <setting name="Name" value="can2_irq_conf_8_31"/>
                                     <setting name="IsrName" value="FlexCAN2_1_IRQn"/>
                                     <setting name="IsrEnabled" value="true"/>
                                     <setting name="IsrPriority" value="5"/>
                                     <setting name="IsrHandler" value="Flexcan2_1_handler"/>
                                  </struct>
                                  <struct name="3">
-                                    <setting name="Name" value="PlatformIsrConfig_11"/>
+                                    <setting name="Name" value="can3_irq_conf_8_31"/>
                                     <setting name="IsrName" value="FlexCAN3_1_IRQn"/>
                                     <setting name="IsrEnabled" value="true"/>
                                     <setting name="IsrPriority" value="5"/>
                                     <setting name="IsrHandler" value="Flexcan3_1_handler"/>
                                  </struct>
                                  <struct name="4">
-                                    <setting name="Name" value="PlatformIsrConfig_13"/>
+                                    <setting name="Name" value="can4_irq_conf_8_31"/>
                                     <setting name="IsrName" value="FlexCAN4_1_IRQn"/>
                                     <setting name="IsrEnabled" value="true"/>
                                     <setting name="IsrPriority" value="5"/>
                                     <setting name="IsrHandler" value="Flexcan4_1_handler"/>
                                  </struct>
                                  <struct name="5">
-                                    <setting name="Name" value="PlatformIsrConfig_15"/>
+                                    <setting name="Name" value="can5_irq_conf_8_31"/>
                                     <setting name="IsrName" value="FlexCAN5_1_IRQn"/>
                                     <setting name="IsrEnabled" value="true"/>
                                     <setting name="IsrPriority" value="5"/>
                                     <setting name="IsrHandler" value="Flexcan5_1_handler"/>
                                  </struct>
                                  <struct name="6">
-                                    <setting name="Name" value="PlatformIsrConfig_17"/>
+                                    <setting name="Name" value="i2c0_irq_conf"/>
                                     <setting name="IsrName" value="LPI2C0_IRQn"/>
                                     <setting name="IsrEnabled" value="true"/>
                                     <setting name="IsrPriority" value="8"/>
                                     <setting name="IsrHandler" value="I2c0_handler"/>
                                  </struct>
                                  <struct name="7">
-                                    <setting name="Name" value="PlatformIsrConfig_7"/>
+                                    <setting name="Name" value="uart2_irq_conf"/>
                                     <setting name="IsrName" value="LPUART2_IRQn"/>
                                     <setting name="IsrEnabled" value="true"/>
                                     <setting name="IsrPriority" value="8"/>
                                     <setting name="IsrHandler" value="Uart2_handler"/>
+                                 </struct>
+                                 <struct name="8">
+                                    <setting name="Name" value="can0_irq_conf_0_7"/>
+                                    <setting name="IsrName" value="FlexCAN0_0_IRQn"/>
+                                    <setting name="IsrEnabled" value="true"/>
+                                    <setting name="IsrPriority" value="5"/>
+                                    <setting name="IsrHandler" value="Flexcan0_0_handler"/>
+                                 </struct>
+                                 <struct name="9">
+                                    <setting name="Name" value="can0_irq_conf_32_63"/>
+                                    <setting name="IsrName" value="FlexCAN0_2_IRQn"/>
+                                    <setting name="IsrEnabled" value="true"/>
+                                    <setting name="IsrPriority" value="5"/>
+                                    <setting name="IsrHandler" value="Flexcan0_2_handler"/>
+                                 </struct>
+                                 <struct name="10">
+                                    <setting name="Name" value="can0_irq_conf_64_95"/>
+                                    <setting name="IsrName" value="FlexCAN0_3_IRQn"/>
+                                    <setting name="IsrEnabled" value="true"/>
+                                    <setting name="IsrPriority" value="5"/>
+                                    <setting name="IsrHandler" value="Flexcan0_3_handler"/>
+                                 </struct>
+                                 <struct name="11">
+                                    <setting name="Name" value="can1_irq_conf_0_7"/>
+                                    <setting name="IsrName" value="FlexCAN1_0_IRQn"/>
+                                    <setting name="IsrEnabled" value="true"/>
+                                    <setting name="IsrPriority" value="5"/>
+                                    <setting name="IsrHandler" value="Flexcan1_0_handler"/>
+                                 </struct>
+                                 <struct name="12">
+                                    <setting name="Name" value="can2_irq_conf_0_7"/>
+                                    <setting name="IsrName" value="FlexCAN2_0_IRQn"/>
+                                    <setting name="IsrEnabled" value="true"/>
+                                    <setting name="IsrPriority" value="5"/>
+                                    <setting name="IsrHandler" value="Flexcan2_0_handler"/>
+                                 </struct>
+                                 <struct name="13">
+                                    <setting name="Name" value="can3_irq_conf_0_7"/>
+                                    <setting name="IsrName" value="FlexCAN3_0_IRQn"/>
+                                    <setting name="IsrEnabled" value="true"/>
+                                    <setting name="IsrPriority" value="5"/>
+                                    <setting name="IsrHandler" value="Flexcan3_0_handler"/>
+                                 </struct>
+                                 <struct name="14">
+                                    <setting name="Name" value="can4_irq_conf_0_7"/>
+                                    <setting name="IsrName" value="FlexCAN4_0_IRQn"/>
+                                    <setting name="IsrEnabled" value="true"/>
+                                    <setting name="IsrPriority" value="5"/>
+                                    <setting name="IsrHandler" value="Flexcan4_0_handler"/>
+                                 </struct>
+                                 <struct name="15">
+                                    <setting name="Name" value="can5_irq_conf_0_7"/>
+                                    <setting name="IsrName" value="FlexCAN5_0_IRQn"/>
+                                    <setting name="IsrEnabled" value="true"/>
+                                    <setting name="IsrPriority" value="5"/>
+                                    <setting name="IsrHandler" value="Flexcan5_0_handler"/>
+                                 </struct>
+                                 <struct name="16">
+                                    <setting name="Name" value="can1_irq_conf_32_63"/>
+                                    <setting name="IsrName" value="FlexCAN1_2_IRQn"/>
+                                    <setting name="IsrEnabled" value="true"/>
+                                    <setting name="IsrPriority" value="5"/>
+                                    <setting name="IsrHandler" value="Flexcan1_2_handler"/>
                                  </struct>
                               </array>
                            </struct>

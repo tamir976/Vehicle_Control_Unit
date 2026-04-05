@@ -5,6 +5,7 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../src/can_frame.c \
+../src/car_control.c \
 ../src/decoder.c \
 ../src/main.c \
 ../src/monitor.c \
@@ -12,6 +13,7 @@ C_SRCS += \
 
 OBJS += \
 ./src/can_frame.o \
+./src/car_control.o \
 ./src/decoder.o \
 ./src/main.o \
 ./src/monitor.o \
@@ -19,6 +21,7 @@ OBJS += \
 
 C_DEPS += \
 ./src/can_frame.d \
+./src/car_control.d \
 ./src/decoder.d \
 ./src/main.d \
 ./src/monitor.d \

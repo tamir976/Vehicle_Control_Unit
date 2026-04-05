@@ -1,4 +1,5 @@
 #include "include/decoder.h"
+#include "include/car_control.h"
 #include <string.h>
 
 #define STEER_OFFSET_DT_SEC     (0.01f)
@@ -274,11 +275,20 @@ static void DeriveState(CarState *cs){
     cs->out.standstill = (fabsf(cs->out.vEgo) < 0.1f) ? 1u : 0u;
 }
 
+static void DecodeSteeringControl(CarControl *cc){
+    const CanFrameEntry *steer_entry = FindFrameByBus(ID_STEER_ANGLE);
+    if(steer_entry == NULL) return;
+}
+
 void CarState_clear(CarState *cs){
     (void)memset(cs, 0, sizeof(*cs));
     sAccurateSteerAngleSeen = 0u;
     sAngleOffsetInitialized = 0u;
     sSteerAngleOffsetDeg = 0.0f;
+}
+
+void CarControl_clear(CarControl *cc){
+    (void)memset(cc, 0, sizeof(*cc));
 }
 
 void CarState_update(CarState *cs){
@@ -295,4 +305,20 @@ void CarState_update(CarState *cs){
     DecodeIpas(cs);
     DeriveState(cs);
     cs->last_update_tick = xTaskGetTickCount();
+}
+void CarControl_update(CarControl *cc){
+    DecodeSteeringControl(cc);
+    cs->last_update_tick = xTaskGetTickCount();
+}
+
+void DecoderTask(void *pv)
+{
+    (void)pv;
+    CarState_clear(&gCarState);
+    CarControl_clear(&gCarControl);
+    for(;;){
+        ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10u));
+        CarState_update(&gCarState);
+        CarControl_update(&gCarControl);
+    }
 }

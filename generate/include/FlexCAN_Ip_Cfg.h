@@ -134,7 +134,7 @@ extern "C"{
 #define FLEXCAN_IP_TIMEOUT_DURATION    (10000U)
 
 /* This this will set the timer source for osif that will be used for timeout */
-#define FLEXCAN_IP_SERVICE_TIMEOUT_TYPE    (OSIF_COUNTER_DUMMY)
+#define FLEXCAN_IP_SERVICE_TIMEOUT_TYPE    (OSIF_COUNTER_SYSTEM)
 
 /* @brief Maximum number of Message Buffers supported for payload size 8 for any of the CAN instances */
 #define FLEXCAN_IP_FEATURE_MAX_MB_NUM    (96U)

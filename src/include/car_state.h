@@ -3,11 +3,10 @@
 #define INCLUDE_CAR_STATE_H_
 
 #include <stdint.h>
-#include "can_descriptors.h"
-#include "FreeRTOS.h"
+#include <FreeRTOS.h>
 
 #define ID_KINEMATICS (0x24u)
-#define ID_STEER_ANGLE_SENSOR (0x025u)
+#define ID_STEER_ANGLE_SENSOR (0x25u)
 #define ID_WHEEL_SPEEDS (0xAAu)
 #define ID_SPEED (0xB4u)
 #define ID_GEAR_HYBRID (0x127u)
@@ -72,5 +71,7 @@ typedef struct {
     uint8_t traction_control_active;
     TickType_t last_update_tick;
 } CarState;
+
+CarState gCarState;
 
 #endif /* INCLUDE_CAR_STATE_H_ */

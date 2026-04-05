@@ -6,8 +6,8 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-#define CAN_CACHE_SIZE        (1024u)
-#define CAN_DEFAULT_TIMEOUT   pdMS_TO_TICKS(500u)
+#define CAN_CACHE_SIZE (512u)
+#define CAN_DEFAULT_TIMEOUT pdMS_TO_TICKS(1000u)
 
 
 static inline uint32_t CanHash(uint32_t id)
@@ -35,10 +35,12 @@ typedef struct
 
 extern CanFrameEntry bus0Table[CAN_CACHE_SIZE];
 extern CanFrameEntry bus1Table[CAN_CACHE_SIZE];
+extern CanFrameEntry bus2Table[CAN_CACHE_SIZE];
 extern CanFrameEntry bus3Table[CAN_CACHE_SIZE];
 
 extern CanFrameCache gCan0Cache;
 extern CanFrameCache gCan1Cache;
+extern CanFrameCache gCan2Cache;
 extern CanFrameCache gCan3Cache;
 
 void CanCache_UpdateFromISR(uint8_t bus, const Flexcan_Ip_MsgBuffType *rxMsg);

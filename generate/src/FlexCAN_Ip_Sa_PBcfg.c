@@ -97,16 +97,34 @@ extern "C"{
 
 extern void FlexcanCar_callback(uint8 instance, Flexcan_Ip_EventType eventType,
                 uint32 buffIdx, const Flexcan_Ip_StateType * flexcanState);
+extern void Flexcan_error_callback(uint8 instance, Flexcan_Ip_EventType eventType,
+                                            uint32 u32ErrStatus,
+                                            const Flexcan_Ip_StateType * flexcanState);
 extern void FlexcanCar_callback(uint8 instance, Flexcan_Ip_EventType eventType,
                 uint32 buffIdx, const Flexcan_Ip_StateType * flexcanState);
+extern void Flexcan_error_callback(uint8 instance, Flexcan_Ip_EventType eventType,
+                                            uint32 u32ErrStatus,
+                                            const Flexcan_Ip_StateType * flexcanState);
 extern void FlexcanCar_callback(uint8 instance, Flexcan_Ip_EventType eventType,
                 uint32 buffIdx, const Flexcan_Ip_StateType * flexcanState);
+extern void Flexcan_error_callback(uint8 instance, Flexcan_Ip_EventType eventType,
+                                            uint32 u32ErrStatus,
+                                            const Flexcan_Ip_StateType * flexcanState);
 extern void FlexcanPC_callback(uint8 instance, Flexcan_Ip_EventType eventType,
                 uint32 buffIdx, const Flexcan_Ip_StateType * flexcanState);
+extern void Flexcan_error_callback(uint8 instance, Flexcan_Ip_EventType eventType,
+                                            uint32 u32ErrStatus,
+                                            const Flexcan_Ip_StateType * flexcanState);
 extern void EPS_callback(uint8 instance, Flexcan_Ip_EventType eventType,
                 uint32 buffIdx, const Flexcan_Ip_StateType * flexcanState);
+extern void Flexcan_error_callback(uint8 instance, Flexcan_Ip_EventType eventType,
+                                            uint32 u32ErrStatus,
+                                            const Flexcan_Ip_StateType * flexcanState);
 extern void EPS_callback(uint8 instance, Flexcan_Ip_EventType eventType,
                 uint32 buffIdx, const Flexcan_Ip_StateType * flexcanState);
+extern void Flexcan_error_callback(uint8 instance, Flexcan_Ip_EventType eventType,
+                                            uint32 u32ErrStatus,
+                                            const Flexcan_Ip_StateType * flexcanState);
 #define CAN_43_FLEXCAN_STOP_SEC_CODE
 #include "Can_43_FLEXCAN_MemMap.h"
 /*==================================================================================================
@@ -142,7 +160,7 @@ Flexcan_Ip_StateType FlexCAN_State5;
 
 const Flexcan_Ip_ConfigType FlexCAN_Config0  = {
     /* Number Of Message Buffer used .max_num_mb  */
-    (uint8)32,
+    (uint8)64,
     /*Can Hw filter count* .num_id_filters*- aici exista variatna sa generez toate filtrele si sa referentiezi tu in cod */
     FLEXCAN_RX_FIFO_ID_FILTERS_8,
     /* Legacy FIFO ENABLED .is_rx_fifo_needed*/
@@ -229,11 +247,11 @@ const Flexcan_Ip_ConfigType FlexCAN_Config0  = {
     /* Controller Callback */
     &FlexcanCar_callback,
     /* Error Callback */
-    NULL_PTR
+    &Flexcan_error_callback
     };
     const Flexcan_Ip_ConfigType FlexCAN_Config1  = {
     /* Number Of Message Buffer used .max_num_mb  */
-    (uint8)32,
+    (uint8)64,
     /*Can Hw filter count* .num_id_filters*- aici exista variatna sa generez toate filtrele si sa referentiezi tu in cod */
     FLEXCAN_RX_FIFO_ID_FILTERS_8,
     /* Legacy FIFO ENABLED .is_rx_fifo_needed*/
@@ -320,7 +338,7 @@ const Flexcan_Ip_ConfigType FlexCAN_Config0  = {
     /* Controller Callback */
     &FlexcanCar_callback,
     /* Error Callback */
-    NULL_PTR
+    &Flexcan_error_callback
     };
     const Flexcan_Ip_ConfigType FlexCAN_Config2  = {
     /* Number Of Message Buffer used .max_num_mb  */
@@ -411,7 +429,7 @@ const Flexcan_Ip_ConfigType FlexCAN_Config0  = {
     /* Controller Callback */
     &FlexcanCar_callback,
     /* Error Callback */
-    NULL_PTR
+    &Flexcan_error_callback
     };
     const Flexcan_Ip_ConfigType FlexCAN_Config3  = {
     /* Number Of Message Buffer used .max_num_mb  */
@@ -502,7 +520,7 @@ const Flexcan_Ip_ConfigType FlexCAN_Config0  = {
     /* Controller Callback */
     &FlexcanPC_callback,
     /* Error Callback */
-    NULL_PTR
+    &Flexcan_error_callback
     };
     const Flexcan_Ip_ConfigType FlexCAN_Config4  = {
     /* Number Of Message Buffer used .max_num_mb  */
@@ -593,7 +611,7 @@ const Flexcan_Ip_ConfigType FlexCAN_Config0  = {
     /* Controller Callback */
     &EPS_callback,
     /* Error Callback */
-    NULL_PTR
+    &Flexcan_error_callback
     };
     const Flexcan_Ip_ConfigType FlexCAN_Config5  = {
     /* Number Of Message Buffer used .max_num_mb  */
@@ -684,7 +702,7 @@ const Flexcan_Ip_ConfigType FlexCAN_Config0  = {
     /* Controller Callback */
     &EPS_callback,
     /* Error Callback */
-    NULL_PTR
+    &Flexcan_error_callback
     };
     
 #define CAN_43_FLEXCAN_STOP_SEC_CONFIG_DATA_UNSPECIFIED

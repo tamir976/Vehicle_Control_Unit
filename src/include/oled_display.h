@@ -23,7 +23,6 @@
 #define OLED_BUF_SIZE      (OLED_W * OLED_H / 8u)
 #define INST_I2C           (0u)
 
-static char g_line[128];
 static uint8_t g_oledBuf[OLED_BUF_SIZE];
 
 
@@ -35,20 +34,10 @@ static int i2c0_write_blocking(const uint8_t *data, uint32_t len)
     return (st == LPI2C_IP_SUCCESS_STATUS) ? 0 : -1;
 }
 
-static void must_write(const uint8_t *data, uint32_t len)
-{
-    if (i2c0_write_blocking(data, len) != 0)
-    {
-        while (1)
-        {
-        }
-    }
-}
-
 static void ssd1306_write_cmd(uint8_t cmd)
 {
     uint8_t pkt[2] = {0x00U, cmd};
-    must_write(pkt, (uint32_t)sizeof(pkt));
+    i2c0_write_blocking(pkt, (uint32_t)sizeof(pkt));
 }
 
 static void ssd1306_write_data(const uint8_t *data, uint32_t len)
@@ -65,7 +54,7 @@ static void ssd1306_write_data(const uint8_t *data, uint32_t len)
             pkt[1u + i] = data[i];
         }
 
-        must_write(pkt, 1U + n);
+        i2c0_write_blocking(pkt, 1U + n);
 
         data += n;
         len  -= n;
