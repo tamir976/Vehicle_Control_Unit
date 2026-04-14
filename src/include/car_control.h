@@ -10,9 +10,8 @@
 typedef struct {
 	float steeringAngleDeg;
 	float acc_value;
+	uint8_t steeringReq;
 	TickType_t last_update_tick;
 } CarControl;
-
-CarControl gCarControl;
 
 #endif /* INCLUDE_CAR_CONTROL_H_ */

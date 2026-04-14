@@ -79,10 +79,14 @@
 "./generate/src/Lpuart_Uart_Ip_Sa_PBcfg.o"
 "./generate/src/OsIf_Cfg.o"
 "./src/can_frame.o"
-"./src/car_control.o"
+"./src/control.o"
 "./src/decoder.o"
+"./src/encoder.o"
+"./src/flexcan_conf.o"
+"./src/hacked_panda.o"
 "./src/main.o"
 "./src/monitor.o"
+"./src/oled_display.o"
 "./src/static_message.o"
 -lc
 -lm

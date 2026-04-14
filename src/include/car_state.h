@@ -24,6 +24,13 @@
 #define ID_BLINKERS_STATE (0x614u)
 #define ID_BODY_CONTROL_STATE (0x620u)
 #define ID_EPS_STATUS (0x262u)
+#define ID_STEERING_LKA (0x2E4u)
+#define ID_PRE_COLLISION (0x283u)
+#define ID_PRE_COLLISION_2 (0x344)
+#define ID_PCM_CRUISE (0x1D2)
+#define ID_PCS_HUD (0x411)
+#define ID_LKAS_HUD (0x412)
+#define ID_STEERING_IPAS_COMMA (0x167)
 
 typedef struct {
 	uint8_t enabled;
@@ -71,7 +78,5 @@ typedef struct {
     uint8_t traction_control_active;
     TickType_t last_update_tick;
 } CarState;
-
-CarState gCarState;
 
 #endif /* INCLUDE_CAR_STATE_H_ */

@@ -1,5 +1,6 @@
 #include "include/can_frame.h"
 #include "include/monitor.h"
+#include <task.h>
 #include <string.h>
 
 CanFrameEntry bus0Table[CAN_CACHE_SIZE];
@@ -25,7 +26,7 @@ CanFrameCache gCan3Cache =
 };
 
 
-static CanFrameEntry *CanCache_FindOrCreate(uint8_t bus, uint32_t id)
+CanFrameEntry *CanCache_FindOrCreate(uint8_t bus, uint32_t id)
 {
     uint32_t index = CanHash(id);
     uint32_t start = index;
@@ -57,6 +58,47 @@ static CanFrameEntry *CanCache_FindOrCreate(uint8_t bus, uint32_t id)
             return NULL;  /* cache full */
         }
     }
+}
+
+boolean CanCache_CopyFrame(const CanFrameCache *cache, uint32_t id, CanFrameEntry *out)
+{
+    uint32_t index;
+    uint32_t start;
+    boolean found;
+
+    if ((cache == NULL) || (out == NULL))
+    {
+        return FALSE;
+    }
+
+    index = CanHash(id);
+    start = index;
+    found = FALSE;
+
+    taskENTER_CRITICAL();
+    while (1)
+    {
+        const CanFrameEntry *entry = &cache->entries[index];
+
+        if ((entry->used != 0u) && (entry->id == id))
+        {
+            if (entry->valid == TRUE)
+            {
+                (void)memcpy(out, entry, sizeof(*out));
+                found = TRUE;
+            }
+            break;
+        }
+
+        index = (index + 1u) & (CAN_CACHE_SIZE - 1u);
+        if (index == start)
+        {
+            break;
+        }
+    }
+    taskEXIT_CRITICAL();
+
+    return found;
 }
 void CanCache_UpdateFromISR(uint8_t bus, const Flexcan_Ip_MsgBuffType *rxMsg)
 {

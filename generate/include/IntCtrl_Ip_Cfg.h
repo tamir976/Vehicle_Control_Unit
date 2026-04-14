@@ -83,14 +83,13 @@ extern void Flexcan4_1_handler(void);
 extern void Flexcan5_1_handler(void);
 extern void I2c0_handler(void);
 extern void Uart2_handler(void);
-extern void Flexcan0_0_handler(void);
+extern void Flexcan0_bus_off_handler(void);
 extern void Flexcan0_2_handler(void);
-extern void Flexcan0_3_handler(void);
-extern void Flexcan1_0_handler(void);
-extern void Flexcan2_0_handler(void);
-extern void Flexcan3_0_handler(void);
-extern void Flexcan4_0_handler(void);
-extern void Flexcan5_0_handler(void);
+extern void Flexcan1_bus_off_handler(void);
+extern void Flexcan2_bus_off_handler(void);
+extern void Flexcan3_bus_off_handler(void);
+extern void Flexcan4_bus_off_handler(void);
+extern void Flexcan5_bus_off_handler(void);
 extern void Flexcan1_2_handler(void);
 #define PLATFORM_STOP_SEC_CONFIG_DATA_UNSPECIFIED
 #include "Platform_MemMap.h"

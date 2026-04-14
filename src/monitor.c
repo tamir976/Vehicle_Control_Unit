@@ -1,7 +1,21 @@
 #include "include/monitor.h"
-
+#include <Lpuart_Uart_Ip.h>
+#include <Lpuart_Uart_Ip_Sa_PBcfg.h>
+#include "include/car_state.h"
+#include "include/flexcan_conf.h"
+#include "include/oled_display.h"
+#include "include/can_frame.h"
+#include "include/car_control.h"
+#include "include/decoder.h"
 
 AppStats gStats = {0};
+
+static void Monitor_DrawStatus(void)
+{
+    char line[22];
+    (void)snprintf(line, sizeof(line), "canTxFails:%lu", (unsigned long)gStats.canTxFails);
+    ssd1306_draw_text(0u, 0u, line);
+}
 
 void Uart_SendString(const char *msg){
     if(msg == NULL){
@@ -57,25 +71,7 @@ void CanCache_RefreshValidity(void)
 }
 
 void CanCheckFlag(void){
-    if(can_rx_flag[INST_FLEXCAN0] != TRUE){
-        ssd1306_draw_text(0u, 0u, "CAN0 RX Flag Not Set");
-    }
-    if(can_rx_flag[INST_FLEXCAN1] != TRUE){
-        ssd1306_draw_text(0u, 0u, "CAN1 RX Flag Not Set");
-    }
-    if(can_rx_flag[INST_FLEXCAN2] != TRUE){
-        ssd1306_draw_text(0u, 0u, "CAN2 RX Flag Not Set");
-    }
-    if(can_rx_flag[INST_FLEXCAN3] != TRUE){
-        ssd1306_draw_text(0u, 0u, "CAN3 RX Flag Not Set");
-    }
-    if(can_rx_flag[INST_FLEXCAN4] != TRUE){
-        ssd1306_draw_text(0u, 0u, "CAN4 RX Flag Not Set");
-    }
-    if(can_rx_flag[INST_FLEXCAN5] != TRUE){
-        ssd1306_draw_text(0u, 0u, "CAN5 RX Flag Not Set");
-    }
-
+    Monitor_DrawStatus();
 }
 
 void UartTask(void *pv)
@@ -90,9 +86,7 @@ void UartTask(void *pv)
 
     for (;;)
     {
-        taskENTER_CRITICAL();
-        (void)memcpy(&snap, &gCarState, sizeof(snap));
-        taskEXIT_CRITICAL();
+        CarState_GetSnapshot(&snap);
 
         n = snprintf(line,
                      sizeof(line),
@@ -117,7 +111,7 @@ void UartTask(void *pv)
     }
 }
 
-void CacheMonitorTask(void *pv)
+void MonitorTask(void *pv)
 {
     TickType_t lastWakeTime;
     (void)pv;

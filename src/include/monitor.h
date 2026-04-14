@@ -6,12 +6,7 @@
 #include <task.h>
 #include <string.h>
 #include <stdio.h>
-#include "Lpuart_Uart_Ip.h"
-#include "Lpuart_Uart_Ip_Sa_PBcfg.h"
-#include "car_state.h"
-#include "flexcan_conf.h"
-#include "oled_display.h"
-#include "can_frame.h"
+
 
 #define INST_UART2 (2)
 typedef struct{
@@ -43,6 +38,6 @@ void CanCache_RefreshValidity(void);
 void CanCheckFlag(void);
 void UartTask(void *pv); 
 void Uart_SendString(const char *msg);
-void CacheMonitorTask(void *pv);
+void MonitorTask(void *pv);
 
 #endif /* INCLUDE_MONITOR_H_ */

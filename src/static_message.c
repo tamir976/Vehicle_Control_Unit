@@ -59,13 +59,13 @@ void StaticDSUTask(void *pv){
                 Flexcan_Ip_StatusType st;
                 (void)memcpy(payload, msg->vl, dlc);
                 tx.data_length = dlc;
-                st = FlexCAN_Ip_Send(bus, GetTxMb(bus), &tx, id, payload);
+                st = CAN_SendFrameBlocking(bus, &tx, id, payload, 2u);
                 if(st != FLEXCAN_STATUS_SUCCESS){
                     gStats.canTxFails++;
                 }
             }
         }
         tick10ms++;
-        vTaskDelayUntil(&lastWakeTime, portTICK_PERIOD_MS(10u));
+        vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(10u));
     }
 }

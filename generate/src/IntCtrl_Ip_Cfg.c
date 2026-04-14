@@ -68,27 +68,26 @@ extern "C"{
 #include "Platform_MemMap.h"
 /* List of configuration for interrupts #1 */
 static const IntCtrl_Ip_IrqConfigType aIrqConfiguration1[] = {
-    {FlexCAN0_1_IRQn, (boolean)TRUE, 5U, &Flexcan0_1_handler},
-    {FlexCAN1_1_IRQn, (boolean)TRUE, 5U, &Flexcan1_1_handler},
-    {FlexCAN2_1_IRQn, (boolean)TRUE, 5U, &Flexcan2_1_handler},
-    {FlexCAN3_1_IRQn, (boolean)TRUE, 5U, &Flexcan3_1_handler},
-    {FlexCAN4_1_IRQn, (boolean)TRUE, 5U, &Flexcan4_1_handler},
-    {FlexCAN5_1_IRQn, (boolean)TRUE, 5U, &Flexcan5_1_handler},
-    {LPI2C0_IRQn, (boolean)TRUE, 8U, &I2c0_handler},
-    {LPUART2_IRQn, (boolean)TRUE, 8U, &Uart2_handler},
-    {FlexCAN0_0_IRQn, (boolean)TRUE, 5U, &Flexcan0_0_handler},
-    {FlexCAN0_2_IRQn, (boolean)TRUE, 5U, &Flexcan0_2_handler},
-    {FlexCAN0_3_IRQn, (boolean)TRUE, 5U, &Flexcan0_3_handler},
-    {FlexCAN1_0_IRQn, (boolean)TRUE, 5U, &Flexcan1_0_handler},
-    {FlexCAN2_0_IRQn, (boolean)TRUE, 5U, &Flexcan2_0_handler},
-    {FlexCAN3_0_IRQn, (boolean)TRUE, 5U, &Flexcan3_0_handler},
-    {FlexCAN4_0_IRQn, (boolean)TRUE, 5U, &Flexcan4_0_handler},
-    {FlexCAN5_0_IRQn, (boolean)TRUE, 5U, &Flexcan5_0_handler},
-    {FlexCAN1_2_IRQn, (boolean)TRUE, 5U, &Flexcan1_2_handler},
+    {FlexCAN0_1_IRQn, (boolean)TRUE, 6U, &Flexcan0_1_handler},
+    {FlexCAN1_1_IRQn, (boolean)TRUE, 6U, &Flexcan1_1_handler},
+    {FlexCAN2_1_IRQn, (boolean)TRUE, 6U, &Flexcan2_1_handler},
+    {FlexCAN3_1_IRQn, (boolean)TRUE, 6U, &Flexcan3_1_handler},
+    {FlexCAN4_1_IRQn, (boolean)TRUE, 6U, &Flexcan4_1_handler},
+    {FlexCAN5_1_IRQn, (boolean)TRUE, 6U, &Flexcan5_1_handler},
+    {LPI2C0_IRQn, (boolean)TRUE, 7U, &I2c0_handler},
+    {LPUART2_IRQn, (boolean)TRUE, 7U, &Uart2_handler},
+    {FlexCAN0_0_IRQn, (boolean)TRUE, 6U, &Flexcan0_bus_off_handler},
+    {FlexCAN0_2_IRQn, (boolean)TRUE, 6U, &Flexcan0_2_handler},
+    {FlexCAN1_0_IRQn, (boolean)TRUE, 6U, &Flexcan1_bus_off_handler},
+    {FlexCAN2_0_IRQn, (boolean)TRUE, 6U, &Flexcan2_bus_off_handler},
+    {FlexCAN3_0_IRQn, (boolean)TRUE, 6U, &Flexcan3_bus_off_handler},
+    {FlexCAN4_0_IRQn, (boolean)TRUE, 6U, &Flexcan4_bus_off_handler},
+    {FlexCAN5_0_IRQn, (boolean)TRUE, 6U, &Flexcan5_bus_off_handler},
+    {FlexCAN1_2_IRQn, (boolean)TRUE, 6U, &Flexcan1_2_handler},
 };
 /* Configuration structure for interrupt controller #1*/
 const IntCtrl_Ip_CtrlConfigType IntCtrlConfig_0 = {
-    17U,
+    16U,
     aIrqConfiguration1
 };
 #define PLATFORM_STOP_SEC_CONFIG_DATA_UNSPECIFIED
