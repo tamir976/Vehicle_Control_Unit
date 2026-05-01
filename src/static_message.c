@@ -1,5 +1,6 @@
 #include "include/static_message.h"
-
+#include "FlexCAN_Ip.h"
+#include "include/flexcan_conf.h"
 const static_dsu_msg_t PRIUS_DSU_MSGS_C[] = {
     {0x128, 1, 3, 6, {0xf4, 0x01, 0x90, 0x83, 0x00, 0x37}},
     {0x141, 1, 2, 4, {0x00, 0x00, 0x00, 0x46}},
@@ -36,33 +37,35 @@ const static_dsu_msg_t PRIUS_DSU_MSGS_C[] = {
     {0x4d3, 0, 100, 8, {0x1C, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00}},
 };
 
+
+void StaticDSUSend(const static_dsu_msg_t *msg){
+    Flexcan_Ip_DataInfoType txi;
+    txi.msg_id_type = FLEXCAN_MSG_ID_STD;
+    txi.fd_enable = false;
+    txi.is_polling = false;
+    txi.is_remote = false;
+    txi.data_length = msg->vl_len;
+    uint8_t bus = msg->bus;
+    uint32_t msg_id = msg->addr;
+    int32_t mbx = GetTxMB(bus);
+    if(mbx >= 0){
+    	(void)FlexCAN_Ip_Send(bus, mbx, &txi, msg_id, msg->vl);
+    }
+
+}
 const size_t PRIUS_DSU_MSGS_C_COUNT = sizeof(PRIUS_DSU_MSGS_C) / sizeof(PRIUS_DSU_MSGS_C[0]);
 
 void StaticDSUTask(void *pv){
     TickType_t lastWakeTime;
     const size_t num_msgs = PRIUS_DSU_MSGS_C_COUNT;
     uint32_t tick10ms = 0u;
-    Flexcan_Ip_DataInfoType tx;
-    uint8_t payload[8];
     (void)pv;
     lastWakeTime = xTaskGetTickCount();
-    tx.is_polling = FALSE;
-    tx.is_remote = FALSE;
-    tx.msg_id_type = FLEXCAN_MSG_ID_STD;
     for(;;){
         for(size_t i = 0u; i<num_msgs; i++){
             const static_dsu_msg_t *msg = &PRIUS_DSU_MSGS_C[i];
             if((msg->freq_100 != 0u) && ((tick10ms % msg->freq_100) == 0u)){
-                uint8_t dlc = msg->vl_len;
-                uint8_t bus = msg->bus;
-                uint32_t id = msg->addr;
-                Flexcan_Ip_StatusType st;
-                (void)memcpy(payload, msg->vl, dlc);
-                tx.data_length = dlc;
-                st = CAN_SendFrameBlocking(bus, &tx, id, payload, 2u);
-                if(st != FLEXCAN_STATUS_SUCCESS){
-                    gStats.canTxFails++;
-                }
+                StaticDSUSend(msg);
             }
         }
         tick10ms++;

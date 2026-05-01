@@ -15,17 +15,17 @@ static int i2c0_write_blocking(const uint8_t *data, uint32_t len)
 {
     Lpi2c_Ip_StatusType st;
 
-    st = Lpi2c_Ip_MasterSendDataBlocking(INST_I2C, (uint8 *)data, len, TRUE, 0xFFFFFFFFu);
+    st = Lpi2c_Ip_MasterSendDataBlocking(INST_I2C, (uint8_t *)data, len, TRUE, 0xFFFFFFFFu);
     return (st == LPI2C_IP_SUCCESS_STATUS) ? 0 : -1;
 }
 
-static void ssd1306_write_cmd(uint8_t cmd)
+static void oled_write_cmd(uint8_t cmd)
 {
     uint8_t pkt[2] = {0x00U, cmd};
     (void)i2c0_write_blocking(pkt, (uint32_t)sizeof(pkt));
 }
 
-static void ssd1306_write_data(const uint8_t *data, uint32_t len)
+static void oled_write_data(const uint8_t *data, uint32_t len)
 {
     uint8_t pkt[1u + 16u];
     pkt[0] = 0x40U;
@@ -97,8 +97,24 @@ static void draw_char5x7(uint8_t x, uint8_t y, char c)
 
 static void draw_string5x7(uint8_t x, uint8_t y, const char *s)
 {
+    uint8_t start_x = x;
+
     while ((s != NULL) && (*s != '\0'))
     {
+        if (*s == '\n')
+        {
+            s++;
+            x = start_x;
+            y = (uint8_t)(y + 8U);
+
+            if (y > (OLED_H - 8U))
+            {
+                break;
+            }
+
+            continue;
+        }
+
         draw_char5x7(x, y, *s);
         s++;
         x = (uint8_t)(x + 6U);
@@ -110,75 +126,75 @@ static void draw_string5x7(uint8_t x, uint8_t y, const char *s)
     }
 }
 
-void ssd1306_init(void)
+void oled_init(void)
 {
-    ssd1306_write_cmd(0xAE);
+    oled_write_cmd(0xAE);
 
-    ssd1306_write_cmd(0xD5);
-    ssd1306_write_cmd(0x80);
-    ssd1306_write_cmd(0xA8);
-    ssd1306_write_cmd(0x1F);
-    ssd1306_write_cmd(0xD3);
-    ssd1306_write_cmd(0x00);
-    ssd1306_write_cmd(0x40);
+    oled_write_cmd(0xD5);
+    oled_write_cmd(0x80);
+    oled_write_cmd(0xA8);
+    oled_write_cmd(0x1F);
+    oled_write_cmd(0xD3);
+    oled_write_cmd(0x00);
+    oled_write_cmd(0x40);
 
-    ssd1306_write_cmd(0x8D);
-    ssd1306_write_cmd(0x14);
+    oled_write_cmd(0x8D);
+    oled_write_cmd(0x14);
 
-    ssd1306_write_cmd(0x20);
-    ssd1306_write_cmd(0x00);
+    oled_write_cmd(0x20);
+    oled_write_cmd(0x00);
 
-    ssd1306_write_cmd(0xA1);
-    ssd1306_write_cmd(0xC8);
+    oled_write_cmd(0xA1);
+    oled_write_cmd(0xC8);
 
-    ssd1306_write_cmd(0xDA);
-    ssd1306_write_cmd(0x02);
+    oled_write_cmd(0xDA);
+    oled_write_cmd(0x02);
 
-    ssd1306_write_cmd(0x81);
-    ssd1306_write_cmd(0x7F);
-    ssd1306_write_cmd(0xD9);
-    ssd1306_write_cmd(0xF1);
-    ssd1306_write_cmd(0xDB);
-    ssd1306_write_cmd(0x40);
+    oled_write_cmd(0x81);
+    oled_write_cmd(0x7F);
+    oled_write_cmd(0xD9);
+    oled_write_cmd(0xF1);
+    oled_write_cmd(0xDB);
+    oled_write_cmd(0x40);
 
-    ssd1306_write_cmd(0xA4);
-    ssd1306_write_cmd(0xA6);
+    oled_write_cmd(0xA4);
+    oled_write_cmd(0xA6);
 
     g_oledInitialized = 1U;
 }
 
-void ssd1306_on(void)
+void oled_on(void)
 {
-    ssd1306_write_cmd(0xAF);
+    oled_write_cmd(0xAF);
 }
 
-void ssd1306_update(void)
-{
-    ssd1306_write_cmd(0x21);
-    ssd1306_write_cmd(0x00);
-    ssd1306_write_cmd(0x7F);
+void oled_update(void)
+{   
+    oled_write_cmd(0x21);
+    oled_write_cmd(0x00);
+    oled_write_cmd(0x7F);
 
-    ssd1306_write_cmd(0x22);
-    ssd1306_write_cmd(0x00);
-    ssd1306_write_cmd(0x03);
+    oled_write_cmd(0x22);
+    oled_write_cmd(0x00);
+    oled_write_cmd(0x03);
 
-    ssd1306_write_data(g_oledBuf, (uint32_t)sizeof(g_oledBuf));
+    oled_write_data(g_oledBuf, (uint32_t)sizeof(g_oledBuf));
 }
 
-void ssd1306_clear(void)
+void oled_clear(void)
 {
     (void)memset(g_oledBuf, 0, sizeof(g_oledBuf));
 }
 
-void ssd1306_draw_text(uint8_t x, uint8_t y, const char *s)
+void oled_draw_text(uint8_t x, uint8_t y, const char *s)
 {
     if (g_oledInitialized == 0U)
     {
-        ssd1306_init();
-        ssd1306_on();
+        oled_init();
+        oled_on();
     }
 
-    ssd1306_clear();
+    oled_clear();
     draw_string5x7(x, y, s);
-    ssd1306_update();
+    oled_update();
 }

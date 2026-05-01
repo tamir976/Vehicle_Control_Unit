@@ -613,6 +613,11 @@
                   <data type="Version">1.0.0</data>
                </feature>
             </dependency>
+            <dependency resourceType="Tool" resourceId="Clocks" description="The Clocks tool is required by the Peripherals tool, but it is disabled." problem_level="2" source="Peripherals">
+               <feature name="enabled" evaluation="equal">
+                  <data>true</data>
+               </feature>
+            </dependency>
          </dependencies>
          <generated_project_files>
             <file path="generate/include/DeviceDefinition.h" update_enabled="true"/>
@@ -1653,7 +1658,7 @@
                                  <setting name="flexcan_cfg_preDivider" value="5"/>
                                  <setting name="flexcan_cfg_rJumpwidth" value="2"/>
                               </struct>
-                              <setting name="FlexCanCallback" value="EPS_callback"/>
+                              <setting name="FlexCanCallback" value="EPS_callback_CAN4"/>
                               <setting name="FlexCanErrorCallback" value="Flexcan_error_callback"/>
                               <setting name="num_enhanced_std_id_filters" value="0"/>
                               <setting name="num_enhanced_ext_id_filters" value="0"/>
@@ -1704,7 +1709,7 @@
                                  <setting name="flexcan_cfg_preDivider" value="5"/>
                                  <setting name="flexcan_cfg_rJumpwidth" value="2"/>
                               </struct>
-                              <setting name="FlexCanCallback" value="EPS_callback"/>
+                              <setting name="FlexCanCallback" value="EPS_callback_CAN5"/>
                               <setting name="FlexCanErrorCallback" value="Flexcan_error_callback"/>
                               <setting name="num_enhanced_std_id_filters" value="0"/>
                               <setting name="num_enhanced_ext_id_filters" value="0"/>
@@ -2026,7 +2031,7 @@
                            <setting name="configSUPPORT_STATIC_ALLOCATION" value="false"/>
                            <setting name="configSUPPORT_DYNAMIC_ALLOCATION" value="true"/>
                            <setting name="memory_scheme_id" value="heap1"/>
-                           <setting name="configTOTAL_HEAP_SIZE" value="32768"/>
+                           <setting name="configTOTAL_HEAP_SIZE" value="49152"/>
                            <setting name="configAPPLICATION_ALLOCATED_HEAP" value="false"/>
                         </struct>
                         <struct name="symmetricmultiprocessing_tab">

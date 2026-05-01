@@ -1,43 +1,73 @@
 #include "include/hacked_panda.h"
 #include "include/monitor.h"
+#include <string.h>
 
 
 const uint8_t PRIUS_SPEED_MSG_DATA[8] = {0x30, 0x00, 0x00, 0x74, 0x00, 0x00, 0x00, 0x00};
 const uint8_t PRIUS_GEAR_MSG_DATA[8]  = {0x07, 0xA0, 0x1F, 0x00, 0x08, 0x00, 0x10, 0x00};
-
-void ForwardFrame(uint8_t fromInst, uint8_t toInst, const Flexcan_Ip_MsgBuffType *msg){
+QueueHandle_t epsQueue4;
+QueueHandle_t epsQueue5;
+void EpsForward4(Flexcan_Ip_MsgBuffType *tx4){
     Flexcan_Ip_DataInfoType txi;
+    txi.msg_id_type = FLEXCAN_MSG_ID_STD;
+    txi.fd_enable = false;
+    txi.is_polling = false;
+    txi.is_remote = false;
     uint8_t payload[8];
-    uint8_t dlc = msg->dataLen;
-    uint32_t id = msg->msgId;
-    (void)memcpy(payload, msg->data, dlc);
-    if((fromInst == INST_FLEXCAN4) && (toInst == INST_FLEXCAN5)){
-    	dlc = 8;
-    	if(id == PRIUS_GEAR_MSGID){
-    		(void)memcpy(payload, PRIUS_GEAR_MSG_DATA, dlc);
-    	}else if(id == PRIUS_SPEED_MSGID){
-    		(void)memcpy(payload, PRIUS_SPEED_MSG_DATA, dlc);
-    	}
+    uint8_t dlc = (tx4->dataLen > 8u) ? 8u : tx4->dataLen;
+    uint32_t msg_id = tx4->msgId;
+    (void)memcpy(payload, tx4->data, dlc);
+    if(msg_id == PRIUS_GEAR_MSGID){
+    	(void)memcpy(payload, PRIUS_GEAR_MSG_DATA, dlc);
+    	dlc = 8u;
+    }
+    else if(msg_id == PRIUS_SPEED_MSGID){
+    	(void)memcpy(payload, PRIUS_SPEED_MSG_DATA, dlc);
+    	dlc  = 8u;
     }
     txi.data_length = dlc;
-    txi.fd_enable = FALSE;
-    txi.is_polling = FALSE;
-    txi.is_remote = FALSE;
-    txi.msg_id_type = FLEXCAN_MSG_ID_STD;
-    CAN_SendFrame(toInst, &txi, id, payload);
+    int32_t mbx = GetTxMB(INST_FLEXCAN5);
+    if(mbx >= 0){
+    	(void)FlexCAN_Ip_Send(INST_FLEXCAN5, mbx, &txi, msg_id, payload);
+    }
 }
 
-void EPSTask(void *pv){
+void EpsForward5(Flexcan_Ip_MsgBuffType *tx5){
+    Flexcan_Ip_DataInfoType txi;
+    txi.msg_id_type = FLEXCAN_MSG_ID_STD;
+    txi.fd_enable = false;
+    txi.is_polling = false;
+    txi.is_remote = false;
+    uint8_t payload[8];
+    uint8_t dlc = (tx5->dataLen > 8u) ? 8u : tx5->dataLen;
+    uint32_t msg_id = tx5->msgId;
+    (void)memcpy(payload, tx5->data, dlc);
+    txi.data_length = dlc;
+    int32_t mbx = GetTxMB(INST_FLEXCAN4);
+    if(mbx >= 0){
+    	(void)FlexCAN_Ip_Send(INST_FLEXCAN4, mbx, &txi, msg_id, payload);
+    }
+
+}
+
+void EPS4Task(void *pv){
     (void)pv;
-    epsMsg msg;
+    TickType_t lastWake = xTaskGetTickCount();
+    Flexcan_Ip_MsgBuffType tx4;
     for(;;){
-        if(xQueueReceive(epsQueue, &msg, portMAX_DELAY) == pdPASS){
-            if(msg.instance == INST_FLEXCAN4){
-                ForwardFrame(INST_FLEXCAN4, INST_FLEXCAN5, &msg.frame);
-            }
-            else{
-                ForwardFrame(INST_FLEXCAN5, INST_FLEXCAN4, &msg.frame);
-            }
-        }
+        xQueueReceive(epsQueue4, &tx4, portMAX_DELAY);
+        EpsForward4(&tx4);
+        vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(1));
+    }
+}
+
+void EPS5Task(void *pv){
+    (void)pv;
+    TickType_t lastWake = xTaskGetTickCount();
+    Flexcan_Ip_MsgBuffType tx5;
+    for(;;){
+        xQueueReceive(epsQueue5, &tx5, portMAX_DELAY);
+        EpsForward5(&tx5);
+        vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(1));
     }
 }

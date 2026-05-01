@@ -2,25 +2,24 @@
 #include "include/car_control.h"
 #include "include/can_frame.h"
 #include <string.h>
+#include <math.h>
 
-#define STEER_OFFSET_DT_SEC     (0.01f)
-#define STEER_OFFSET_RC_SEC     (60.0f)
-#define STEER_OFFSET_ALPHA      (STEER_OFFSET_DT_SEC / (STEER_OFFSET_RC_SEC + STEER_OFFSET_DT_SEC))
+CarState gCarState[2] = {0};
+CarControl gCarControl[2] = {0};
+volatile uint8_t CsActiveId = 0;
+volatile uint8_t CcActiveId = 0;
 
-static uint8_t sAccurateSteerAngleSeen = 0u;
-static uint8_t sAngleOffsetInitialized = 0u;
-static float sSteerAngleOffsetDeg = 0.0f;
-static CarControl sCarControlBuf[2];
-static CarState sCarStateBuf[2];
-static volatile uint8_t sCarControlActiveIdx = 0u;
-static volatile uint8_t sCarStateActiveIdx = 0u;
-
-static boolean FindFrameByBus(uint32_t id, CanFrameEntry *out)
-{
+static bool FindFrameIdCs(uint32_t id, CanFrameEntry *out){
     if (CanCache_CopyFrame(&gCan0Cache, id, out) == TRUE) { return TRUE; }
-    if (CanCache_CopyFrame(&gCan1Cache, id, out) == TRUE) { return TRUE; }
-    if (CanCache_CopyFrame(&gCan3Cache, id, out) == TRUE) { return TRUE; }
+    if (CanCache_CopyFrame(&gCan1Cache, id, out) == TRUE) { return TRUE; }    
+    if (CanCache_CopyFrame(&gCan2Cache, id, out) == TRUE) { return TRUE; }
     return FALSE;
+}
+static bool FindFrameIdCc(uint32_t id, CanFrameEntry *out){
+    if(CanCache_CopyFrame(&gCan3Cache, id, out) == TRUE){
+        return true;
+    }
+    return false;
 }
 
 static uint64_t ExtractUnsignedLE(const uint8_t data[8], uint16_t startBit, uint8_t length)
@@ -92,175 +91,193 @@ static float DecodePhysBE(const uint8_t data[8], uint16_t startBit, uint8_t leng
     return ((float)raw) * scale + offset;
 }
 
-static uint8_t DecodeBoolLE(const uint8_t data[8], uint16_t startBit){
-    uint64_t raw = ExtractUnsignedLE(data, startBit, 1u);
-    return (raw != 0u) ? 1u : 0u;
-}
-
-static uint8_t DecodeBoolBE(const uint8_t data[8], uint16_t startBit){
-    uint64_t raw = ExtractUnsignedBE(data, startBit, 1u);
-    return (raw != 0u) ? 1u : 0u;
-}
-
-
-static void DecodeSpeed(CarState *cs){
+static void DecodeSpeedCs(CarState *cs){
     CanFrameEntry entry;
-    if(FindFrameByBus(ID_SPEED, &entry) == FALSE) return;
+    if(FindFrameIdCs(ID_SPEED, &entry) == FALSE) return;
     float speed = DecodePhysBE(entry.data, 47u, 16u, 0u, 0.01f, 0.0f);
-    cs->out.vEgo = speed;
-    cs->last_update_tick = entry.lastRxTick;
+    cs->cruiseState.speedCluster = speed;
 }
-static void DecodeWheelSpeeds(CarState *cs){
+
+static void DecodeWheelSpeedsCs(CarState *cs){
     CanFrameEntry entry;
-    if(FindFrameByBus(ID_WHEEL_SPEEDS, &entry) == FALSE) return;
-    cs->wheel_speed_fr = DecodePhysBE(entry.data, 7u, 16u, 0u, 0.01f, -67.67f);
-    cs->wheel_speed_fl = DecodePhysBE(entry.data, 23u, 16u, 0u, 0.01f, -67.67f);
-    cs->wheel_speed_rr = DecodePhysBE(entry.data, 39u, 16u, 0u, 0.01f, -67.67f);
-    cs->wheel_speed_rl = DecodePhysBE(entry.data, 55u, 16u, 0u, 0.01f, -67.67f);
+    if(!FindFrameIdCs(ID_WHEEL_SPEEDS, &entry)) return;
+    float fl = DecodePhysBE(entry.data, 23u, 16u, 0u, 0.01f, -67.67f);
+    float fr = DecodePhysBE(entry.data, 7u, 16u, 0u, 0.01f, -67.67f);
+    float rl = DecodePhysBE(entry.data, 55u, 16u, 0u, 0.01f, -67.67f);
+    float rr = DecodePhysBE(entry.data, 39u, 16u, 0u, 0.01f, -67.67f);
+    
+    cs->vEgo = (fl + fr + rl + rr) * 0.25f;
+    cs->standStill = (fabsf(cs->vEgo) < 1e-3f);
 }
-static void DecodeSteering(CarState *cs){
-    CanFrameEntry angle;
-    CanFrameEntry torque;
-    boolean hasAngle = FindFrameByBus(ID_STEER_ANGLE_SENSOR, &angle);
-    boolean hasTorque = FindFrameByBus(ID_STEER_TORQUE, &torque);
-    float torqueSensorAngleDeg;
-    uint8_t steerAngleInitializing;
 
-    if(hasAngle == TRUE){
-        float angle_main = DecodePhysBE(angle.data, 3u, 12u, 1u, 1.5f, 0.0f);
-        float angle_frac = DecodePhysBE(angle.data, 39u, 4u, 1u, 0.1f, 0.0f);
-        float steer_rate = DecodePhysBE(angle.data, 35u, 12u, 1u, 1.0f, 0.0f);
-        cs->out.steeringAngleDeg = angle_main + angle_frac;
-        cs->out.steeringRateDeg = steer_rate;
+static void DecodeSteeringCs(CarState *cs){
+    CanFrameEntry angle, torque;
+    if(FindFrameIdCs(ID_STEER_ANGLE_SENSOR, &angle) == true){
+        float main = DecodePhysBE(angle.data, 3u, 12u, 1u, 1.5f, 0.0f);
+        float frac = DecodePhysBE(angle.data, 39u, 4u, 1u, 0.1f, 0.0f);
+        cs->steeringAngleDeg = main + frac; 
+        cs->steeringRateDeg = DecodePhysBE(angle.data, 35u, 12u, 1u, 1.0f, 0.0f);
     }
-
-    if(hasTorque == TRUE) {
-        cs->out.steeringTorque = DecodePhysBE(torque.data, 15u, 16u, 1u, 1.0f, 0.0f);
-        cs->out.steeringTorqueEps = DecodePhysBE(torque.data, 47u, 16u, 1u, 1.0f, 0.0f);
-
-        torqueSensorAngleDeg = DecodePhysBE(torque.data, 31u, 16u, 1u, 0.0573f, 0.0f);
-        steerAngleInitializing = DecodeBoolBE(torque.data, 3u);
-
-        if ((fabsf(torqueSensorAngleDeg) > 1e-3f) && (steerAngleInitializing == 0u))
-        {
-            sAccurateSteerAngleSeen = 1u;
-        }
-
-        if ((sAccurateSteerAngleSeen != 0u) &&
-            (fabsf(cs->out.steeringAngleDeg) < 90.0f) &&
-            (fabsf(cs->out.steeringRateDeg) < 100.0f))
-        {
-            float offsetSample = torqueSensorAngleDeg - cs->out.steeringAngleDeg;
-
-            if (sAngleOffsetInitialized != 0u)
-            {
-                sSteerAngleOffsetDeg = ((1.0f - STEER_OFFSET_ALPHA) * sSteerAngleOffsetDeg) + (STEER_OFFSET_ALPHA * offsetSample);
-            }
-            else
-            {
-                sSteerAngleOffsetDeg = offsetSample;
-                sAngleOffsetInitialized = 1u;
-            }
-        }
-
-        if (sAngleOffsetInitialized != 0u)
-        {
-            cs->out.steeringAngleOffsetDeg = sSteerAngleOffsetDeg;
-            cs->out.steeringAngleDeg = torqueSensorAngleDeg - sSteerAngleOffsetDeg;
-        }
+    if(FindFrameIdCs(ID_STEER_TORQUE, &torque) == true){
+        cs->steeringTorque = DecodePhysBE(torque.data, 15u, 16u, 1u, 1.0f, 0.0f);
+        cs->steeringPressed = fabsf(cs->steeringTorque) > 1.0f;
     }
 }
-static void DecodeDynamic(CarState *cs){
+
+static void DecodeDynamicCs(CarState *cs){
     CanFrameEntry entry;
-    if(FindFrameByBus(ID_KINEMATICS, &entry) == FALSE) return;
-    cs->accel_x = DecodePhysBE(entry.data, 17u, 10u, 0u, 0.03589f, -18.375f);
-    cs->accel_y = DecodePhysBE(entry.data, 33u, 10u, 0u, 0.03589f, -18.375f);
-    cs->yaw_rate = DecodePhysBE(entry.data, 1u, 10u, 0u, 0.244f, -125.0f);
-    cs->out.aEgo = cs->accel_x;
-}
-static void DecodeEngineAndPedal(CarState *cs){
-    CanFrameEntry rpm_entry;
-    CanFrameEntry gas_entry;
-    if(FindFrameByBus(ID_ENGINE_RPM, &rpm_entry) == TRUE){
-        cs->engine_rpm = DecodePhysBE(rpm_entry.data, 7u, 16u, 1u, 0.78125f, 0.0f);
-    }
-    if(FindFrameByBus(ID_GAS_PEDAL_HYBRID, &gas_entry) == TRUE){
-        cs->gas_pedal = DecodePhysBE(gas_entry.data, 23u, 8u, 0u, 0.005f, 0.0f);
-    }
-}
-static void DecodeGear(CarState *cs){
-    CanFrameEntry entry;
-    if(FindFrameByBus(ID_GEAR_PACKET, &entry) == FALSE) return;
-    cs->gear = (uint8_t)ExtractUnsignedBE(entry.data, 13u, 6u);
+    if(FindFrameIdCs(ID_KINEMATICS, &entry) == FALSE) return;
+    cs->aEgo = DecodePhysBE(entry.data, 17u, 10u, 0u, 0.03589f, -18.375f);
+    cs->yawRate = DecodePhysBE(entry.data, 1u, 10u, 0u, 0.244f, -125.0f);
 }
 
-static void DecodeCruise(CarState *cs){
-    CanFrameEntry pcm2_entry;
-    CanFrameEntry pcmsm_entry;
-    if(FindFrameByBus(ID_PCM_CRUISE_2, &pcm2_entry) == TRUE){
-        cs->brake_pressed = DecodeBoolBE(pcm2_entry.data, 3u);
-        cs->pcm_follow_distance = (uint8_t)ExtractUnsignedBE(pcm2_entry.data, 12u, 2u);
-        uint8_t main_on = DecodeBoolBE(pcm2_entry.data, 15u);
-        if(!main_on){
-              cs->out.cruiseState.enabled = 0u;
+static void DecodeEngineAndPedalCs(CarState *cs){
+    CanFrameEntry rpm_entry, gas_entry;
+    if(FindFrameIdCs(ID_ENGINE_RPM, &rpm_entry) == TRUE){
+        cs->engineRpm = DecodePhysBE(rpm_entry.data, 7u, 16u, 1u, 0.78125f, 0.0f);
+    }
+    if(FindFrameIdCs(ID_GAS_PEDAL, &gas_entry) == TRUE){
+        cs->gasPedal = DecodePhysBE(gas_entry.data, 55u, 8u, 0u, 0.5f, 0.0f);
+        if(cs->gasPedal > 0.01f){
+            cs->gasPressed = true;
+        }else{
+            cs->gasPressed = false;
         }
     }
-    if(FindFrameByBus(ID_PCM_CRUISE_SM, &pcmsm_entry) == TRUE){
-        uint8_t cruiseState = (uint8_t)ExtractUnsignedBE(pcmsm_entry.data, 11u, 4u);
-        cs->out.cruiseState.enabled = (cruiseState == 6u) ? 1u : 0u;
+}
+
+static void DecodeBrakeCs(CarState *cs){
+    CanFrameEntry entry, brake;
+    if(!FindFrameIdCs(ID_BRAKE_MODULE, &entry)) return;
+    cs->brakePressed = ExtractUnsignedBE(entry.data, 37u, 1u);
+    if(!FindFrameIdCs(ID_BODY_CONTROL_STATE, &brake)) return;
+    cs->parkingBrake = ExtractUnsignedBE(brake.data, 60u, 1u);
+}
+
+static void DecodeGearCs(CarState *cs){
+    CanFrameEntry entry;
+    if(FindFrameIdCs(ID_GEAR_PACKET, &entry) == FALSE) return;
+    uint8_t gear = ExtractUnsignedBE(entry.data, 47u, 4u);
+    switch (gear)
+    {
+    case 0: cs->gear = park; break;
+    case 1: cs->gear = reverse; break;
+    case 2: cs->gear = neutral; break;
+    case 3: cs->gear = drive; break;
+    default: cs->gear = gear_unknown; break;
     }
 }
-static void DecodeBody(CarState *cs){
-    CanFrameEntry body;
+
+static void DecodeCruiseCs(CarState *cs){
+    CanFrameEntry pcm2, pcm;
+    bool has_pcm2 = FindFrameIdCs(ID_PCM_CRUISE_2, &pcm2);
+    if(has_pcm2){
+        cs->accFaulted = ExtractUnsignedBE(pcm2.data, 47u, 1u);
+        cs->cruiseState.available = ExtractUnsignedBE(pcm2.data, 15u, 1u);
+        cs->cruiseState.speed = DecodePhysBE(pcm2.data, 23u, 8u, 0u, 1.0f, 0.0f) * 0.27778f;
+    }
+    if(FindFrameIdCs(ID_PCM_CRUISE, &pcm)){
+        cs->cruiseState.enabled = ExtractUnsignedBE(pcm.data, 5u, 1u);
+        uint8_t state = ExtractUnsignedBE(pcm.data, 55u, 4u);
+        cs->cruiseState.standStill = (state == 7);
+        cs->cruiseState.nonAdaptive = (state >= 1 && state <= 6);
+    }
+    if(has_pcm2){
+        uint8_t low_speed_lockout = ExtractUnsignedBE(pcm2.data, 14u, 2u);
+        cs->lockoutState = (low_speed_lockout == 2u);
+    }
+}
+static void DecodeBodyCs(CarState *cs){
     CanFrameEntry blinkers;
-    if(FindFrameByBus(ID_BODY_CONTROL_STATE, &body) == TRUE){
-        cs->door_open_fl = DecodeBoolBE(body.data, 45u);
-        cs->door_open_fr = DecodeBoolBE(body.data, 44u);
-        cs->door_open_rl = DecodeBoolBE(body.data, 42u);
-        cs->door_open_rr = DecodeBoolBE(body.data, 43u);
-    }
-    if(FindFrameByBus(ID_BLINKERS_STATE, &blinkers) == TRUE){
-        uint8_t turn = (uint8_t)ExtractUnsignedBE(blinkers.data, 29u, 2u);
-        cs->left_blinker = (turn == 1u) ? 1u : 0u;
-        cs->right_blinker = (turn == 2u) ? 1u : 0u;
+    if(FindFrameIdCs(ID_BLINKERS_STATE, &blinkers)){
+        uint8_t turn = ExtractUnsignedBE(blinkers.data, 29u, 2u);
+        cs->leftBlinker = (turn == 1u);
+        cs->rightBlinker = (turn == 2u);
     }
 }
 
-static void DecodeVsc(CarState *cs){
+static void DecodeIpasCs(CarState *cs){
     CanFrameEntry entry;
-    if(FindFrameByBus(ID_VSC1S07, &entry) == FALSE) return;
-    cs->abs_active = DecodeBoolBE(entry.data, 2u);
-    cs->traction_control_active = DecodeBoolBE(entry.data, 1u);
-    cs->gvc = DecodePhysBE(entry.data, 39u, 8u, 1u, 0.04f, 0.0f);
-    cs->eps_active = 0u;
+    if(!FindFrameIdCs(ID_EPS_STATUS, &entry)) return;
+    uint8_t state = ExtractUnsignedBE(entry.data, 3u, 4u);
+    cs->ipasActive = (state == 3u);
 }
 
-static void DecodeAccControl(CarState *cs){
+static void DecodeButtonsCs(CarState *cs){
     CanFrameEntry entry;
-    if(FindFrameByBus(ID_ACC_CONTROL, &entry) == FALSE) return;
-    cs->acc_type = (uint8_t)ExtractUnsignedBE(entry.data, 23u, 2u);
-}
-static void DecodeIpas(CarState *cs){
-    CanFrameEntry entry;
-    if(FindFrameByBus(ID_STEERING_IPAS, &entry) == FALSE) return;
-    uint8_t state = (uint8_t)ExtractUnsignedBE(entry.data, 7u, 4u);
-    cs->ipas_active = state == 3u ? 1u : 0u;
+    static uint8_t prev = 0;
+    if(!FindFrameIdCs(ID_ACC_CONTROL, &entry)) return;
+    uint8_t current = ExtractUnsignedBE(entry.data, 23u, 2u);
+    cs->buttonPressed = false;
+    if(current != prev){
+        cs->buttonPressed = true;
+        cs->buttonType = gadAdjustCruise;
+    }
+    prev = current;
 }
 
-static void DeriveState(CarState *cs){
-    cs->out.standstill = (fabsf(cs->out.vEgo) < 0.1f) ? 1u : 0u;
+static void DecodeAccCc(CarControl *cc){
+    CanFrameEntry entry;
+    if(!FindFrameIdCc(ID_VCU_ACCEL_CMD, &entry)) return;
+    cc->actuators.accelCmd = DecodePhysLE(entry.data, 0u, 16u, 1u, 0.001f, 0.0f);
+    cc->throttleCmd = DecodePhysLE(entry.data, 16u, 10u, 0u, 0.001f, 0.0f);
+    cc->brakeCmd = DecodePhysLE(entry.data, 26u, 10u, 0u, 0.001f, 0.0f);
+    cc->accEnable = ExtractUnsignedLE(entry.data, 36u, 1u);
+    cc->emergency = ExtractUnsignedLE(entry.data, 37u, 1u);
 }
 
-static void DecodeSteeringControl(CarControl *cc){
-    CanFrameEntry steer_entry;
-    if(FindFrameByBus(ID_STEER_ANGLE, &steer_entry) == FALSE) return;
+static void DecodeSteerCc(CarControl *cc){
+    CanFrameEntry entry;
+    if(!FindFrameIdCc(ID_VCU_STEER_CMD, &entry)) return;
+    cc->actuators.steeringAngleDegCmd = DecodePhysLE(entry.data, 0u, 16u, 1u, 0.1f, 0.0f);
+    cc->steeringEnable = ExtractUnsignedLE(entry.data, 16u, 1u);
+}
+
+static void DecodeSafetyCc(CarControl *cc){
+    CanFrameEntry entry;
+    if(!FindFrameIdCc(ID_VCU_SAFETY_CMD, &entry)) return;
+    cc->vcuEnabled = ExtractUnsignedLE(entry.data, 0u, 1u);
+    cc->longActive = ExtractUnsignedLE(entry.data, 1u, 1u);
+    cc->latActive = ExtractUnsignedLE(entry.data, 2u, 1u);
+}
+
+static void DecodeGearCc(CarControl *cc){
+    CanFrameEntry entry;
+    if(!FindFrameIdCc(ID_VCU_GEAR_CMD, &entry)) return;
+    uint8_t gear = DecodePhysLE(entry.data, 0u, 8u, 0u, 1.0f, 0.0f);
+    switch (gear)
+    {
+    case 0: cc->gearCmd = Gear_NONE; break;
+    case 1: cc->gearCmd = PARK; break;
+    case 2: cc->gearCmd = REVERSE; break;
+    case 3: cc->gearCmd = NEUTRAL; break;
+    case 4: cc->gearCmd = DRIVE; break;  
+    default: cc->gearCmd = Gear_UNKNOWN; break;
+    }
+}
+
+static void DecodeBlinkerCc(CarControl *cc){
+    CanFrameEntry entry;
+    if(!FindFrameIdCc(ID_VCU_BODY_CMD, &entry)) return;
+    uint8_t indicator = DecodePhysLE(entry.data, 0u, 2u, 0u, 1.0f, 0.0f);
+    switch (indicator)
+    {
+    case 0: cc->turnIndicator = Turn_NONE; break;
+    case 1: cc->turnIndicator = DISABLE; break;
+    case 2: cc->turnIndicator = LEFT; break;
+    case 3: cc->turnIndicator = RIGHT; break;
+    default: cc->turnIndicator = Turn_UNKNOWN; break;
+    }
+}
+
+static void DecodeHazardCc(CarControl *cc){
+    CanFrameEntry entry;
+    if(!FindFrameIdCc(ID_VCU_BODY_CMD, &entry)) return;
+    cc->hazardLights = ExtractUnsignedLE(entry.data, 2u, 1u);
 }
 
 void CarState_clear(CarState *cs){
     (void)memset(cs, 0, sizeof(*cs));
-    sAccurateSteerAngleSeen = 0u;
-    sAngleOffsetInitialized = 0u;
-    sSteerAngleOffsetDeg = 0.0f;
 }
 
 void CarControl_clear(CarControl *cc){
@@ -268,88 +285,56 @@ void CarControl_clear(CarControl *cc){
 }
 
 void CarState_update(CarState *cs){
-    DecodeSpeed(cs);
-    DecodeWheelSpeeds(cs);
-    DecodeSteering(cs);
-    DecodeDynamic(cs);
-    DecodeEngineAndPedal(cs);
-    DecodeGear(cs);
-    DecodeCruise(cs);
-    DecodeBody(cs);
-    DecodeVsc(cs);
-    DecodeAccControl(cs);
-    DecodeIpas(cs);
-    DeriveState(cs);
+    DecodeSpeedCs(cs);
+    DecodeWheelSpeedsCs(cs);
+    DecodeSteeringCs(cs);
+    DecodeDynamicCs(cs);
+    DecodeEngineAndPedalCs(cs);
+    DecodeBrakeCs(cs);
+    DecodeGearCs(cs);
+    DecodeCruiseCs(cs);
+    DecodeBodyCs(cs);
+    DecodeIpasCs(cs);
+    DecodeButtonsCs(cs);
     cs->last_update_tick = xTaskGetTickCount();
 }
 
 void CarControl_update(CarControl *cc){
-    DecodeSteeringControl(cc);
+    DecodeAccCc(cc);
+    DecodeSteerCc(cc);
+    DecodeSafetyCc(cc);
+    DecodeGearCc(cc);
+    DecodeBlinkerCc(cc);
+    DecodeHazardCc(cc);
     cc->last_update_tick = xTaskGetTickCount();
 }
 
-void CarState_GetSnapshot(CarState *out)
-{
-    uint8_t activeIdx;
-
-    if (out == NULL)
-    {
-        return;
-    }
-
-    taskENTER_CRITICAL();
-    activeIdx = sCarStateActiveIdx;
-    (void)memcpy(out, &sCarStateBuf[activeIdx], sizeof(*out));
-    taskEXIT_CRITICAL();
-}
-
-void CarControl_GetSnapshot(CarControl *out)
-{
-    uint8_t activeIdx;
-
-    if (out == NULL)
-    {
-        return;
-    }
-
-    taskENTER_CRITICAL();
-    activeIdx = sCarControlActiveIdx;
-    (void)memcpy(out, &sCarControlBuf[activeIdx], sizeof(*out));
-    taskEXIT_CRITICAL();
-}
-
-void DecoderTask(void *pv)
-{
-    uint8_t inactiveStateIdx;
-    uint8_t inactiveControlIdx;
-    CarState *nextState;
-    CarControl *nextControl;
-
+void CsDecodeTask(void *pv){
     (void)pv;
-    CarState_clear(&sCarStateBuf[0]);
-    CarState_clear(&sCarStateBuf[1]);
-    CarControl_clear(&sCarControlBuf[0]);
-    CarControl_clear(&sCarControlBuf[1]);
-
+    uint8_t writeId;
+    TickType_t lastWake = xTaskGetTickCount();
     for(;;){
-        ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10u));
-
+        writeId = (CsActiveId == 0) ? 1 : 0;
+        CarState_clear(&gCarState[writeId]);
+        CarState_update(&gCarState[writeId]);
         taskENTER_CRITICAL();
-        inactiveStateIdx = (uint8_t)(1u - sCarStateActiveIdx);
-        inactiveControlIdx = (uint8_t)(1u - sCarControlActiveIdx);
+        CsActiveId = writeId;
         taskEXIT_CRITICAL();
+        vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(10));
+    }
+}
 
-        nextState = &sCarStateBuf[inactiveStateIdx];
-        nextControl = &sCarControlBuf[inactiveControlIdx];
-
-        CarState_clear(nextState);
-        CarControl_clear(nextControl);
-        CarState_update(nextState);
-        CarControl_update(nextControl);
-
+void CcDecodeTask(void *pv){
+    (void)pv;
+    uint8_t writeId;
+    TickType_t lastWake = xTaskGetTickCount();
+    for(;;){
+        writeId = (CcActiveId == 0) ? 1 : 0;
+        CarControl_clear(&gCarControl[writeId]);
+        CarControl_update(&gCarControl[writeId]);
         taskENTER_CRITICAL();
-        sCarStateActiveIdx = inactiveStateIdx;
-        sCarControlActiveIdx = inactiveControlIdx;
+        CcActiveId = writeId;
         taskEXIT_CRITICAL();
+        vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(10));
     }
 }

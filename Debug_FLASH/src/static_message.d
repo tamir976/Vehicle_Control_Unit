@@ -103,8 +103,10 @@ src/static_message.o: ../src/static_message.c \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Reg_eSys.h \
  ../RTD/include/FlexCAN_Ip_Types.h ../RTD/include/FlexCAN_Ip_Wrapper.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Can_43_FLEXCAN_MemMap.h \
- ../src/include/flexcan_conf.h ../src/include/monitor.h \
- ../FreeRTOS/Source/include/task.h ../FreeRTOS/Source/include/list.h
+ ../src/include/flexcan_conf.h ../FreeRTOS/Source/include/queue.h \
+ ../FreeRTOS/Source/include/task.h ../FreeRTOS/Source/include/list.h \
+ ../src/include/monitor.h ../FreeRTOS/Source/include/task.h \
+ ../src/include/flexcan_conf.h
 ../src/include/static_message.h:
 ../FreeRTOS/Source/include/FreeRTOS.h:
 C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/FreeRTOSConfig.h:
@@ -214,6 +216,9 @@ C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R
 ../RTD/include/FlexCAN_Ip_Wrapper.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Can_43_FLEXCAN_MemMap.h:
 ../src/include/flexcan_conf.h:
-../src/include/monitor.h:
+../FreeRTOS/Source/include/queue.h:
 ../FreeRTOS/Source/include/task.h:
 ../FreeRTOS/Source/include/list.h:
+../src/include/monitor.h:
+../FreeRTOS/Source/include/task.h:
+../src/include/flexcan_conf.h:

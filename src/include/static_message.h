@@ -17,6 +17,7 @@ typedef struct {
 
 extern const static_dsu_msg_t PRIUS_DSU_MSGS_C[];
 extern const size_t PRIUS_DSU_MSGS_C_COUNT;
+void StaticDSUSend(const static_dsu_msg_t *msg);
 void StaticDSUTask(void *pv);
 
 #endif /* INCLUDE_STATIC_MESSAGE_H_ */

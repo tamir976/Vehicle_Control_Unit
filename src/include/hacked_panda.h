@@ -13,11 +13,8 @@
 
 extern const uint8_t PRIUS_SPEED_MSG_DATA[8];
 extern const uint8_t PRIUS_GEAR_MSG_DATA[8];
-typedef struct{
-    uint8_t instance;
-    Flexcan_Ip_MsgBuffType frame;
-} epsMsg;
-
-void ForwardFrame(uint8_t fromInst, uint8_t toInst, const Flexcan_Ip_MsgBuffType *msg);
-void EPSTask(void *pv);
+extern QueueHandle_t epsQueue4;
+extern QueueHandle_t epsQueue5;
+void EPS4Task(void *pv);
+void EPS5Task(void *pv);
 #endif

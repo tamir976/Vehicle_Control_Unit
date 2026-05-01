@@ -115,12 +115,12 @@ extern void FlexcanPC_callback(uint8 instance, Flexcan_Ip_EventType eventType,
 extern void Flexcan_error_callback(uint8 instance, Flexcan_Ip_EventType eventType,
                                             uint32 u32ErrStatus,
                                             const Flexcan_Ip_StateType * flexcanState);
-extern void EPS_callback(uint8 instance, Flexcan_Ip_EventType eventType,
+extern void EPS_callback_CAN4(uint8 instance, Flexcan_Ip_EventType eventType,
                 uint32 buffIdx, const Flexcan_Ip_StateType * flexcanState);
 extern void Flexcan_error_callback(uint8 instance, Flexcan_Ip_EventType eventType,
                                             uint32 u32ErrStatus,
                                             const Flexcan_Ip_StateType * flexcanState);
-extern void EPS_callback(uint8 instance, Flexcan_Ip_EventType eventType,
+extern void EPS_callback_CAN5(uint8 instance, Flexcan_Ip_EventType eventType,
                 uint32 buffIdx, const Flexcan_Ip_StateType * flexcanState);
 extern void Flexcan_error_callback(uint8 instance, Flexcan_Ip_EventType eventType,
                                             uint32 u32ErrStatus,
@@ -609,7 +609,7 @@ const Flexcan_Ip_ConfigType FlexCAN_Config0  = {
          0,
   #endif
     /* Controller Callback */
-    &EPS_callback,
+    &EPS_callback_CAN4,
     /* Error Callback */
     &Flexcan_error_callback
     };
@@ -700,7 +700,7 @@ const Flexcan_Ip_ConfigType FlexCAN_Config0  = {
          0,
   #endif
     /* Controller Callback */
-    &EPS_callback,
+    &EPS_callback_CAN5,
     /* Error Callback */
     &Flexcan_error_callback
     };

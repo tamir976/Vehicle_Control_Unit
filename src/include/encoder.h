@@ -3,12 +3,23 @@
 
 
 #include <stdint.h>
-#include <FlexCAN_Ip.h>
+#include "FlexCAN_Ip.h"
 #include <string.h>
 #include "control.h"
+#include <stdbool.h>
+#include "queue.h"
+
+
+typedef struct {
+    TickType_t last_run;
+    TickType_t period;
+} MsgTimer_t;
+
+extern MsgTimer_t gMsgTimers[];
+
 
 void encode_steer_command(uint32_t id, SteerCommand *cmd, uint8_t dlc);
-void encode_accel_command(uint32_t id, AccelCommand *cmd, uint8_t dlc);
+void encode_acc_command(uint32_t id, AccelCommand *cmd, uint8_t dlc);
 void encode_pcs_command(uint32_t id, PcsCommand *cmd, uint8_t dlc);
 void encode_pcs_command_2(uint32_t id, PcsCommand_2 *cmd, uint8_t dlc);
 void encode_acc_cancel_command(uint32_t id, AccelCancelCommand *cmd, uint8_t dlc);
@@ -17,7 +28,14 @@ void encode_ui_command(uint32_t id, UICommand *cmd, uint8_t dlc);
 void encode_ipas_steer_command(uint32_t id, SteeringIpasCommand *cmd, uint8_t dlc);
 void encode_ipas_steer_comma_command(uint32_t id, SteeringIpasCommaCommand *cmd, uint8_t dlc);
 uint8_t calculate_checksum(uint32_t id, const uint8_t *data, uint8_t dlc);
-void CAN_Send(uint32_t id, uint8_t bus, uint8_t *data, uint8_t dlc);
+void create_steer_command(SteerCommand *cmd);
+void create_acc_command(AccelCommand *cmd);
+void create_pcs_commands(PcsCommand *cmd, PcsCommand_2 *cmd2);
+void create_acc_cancel_command(AccelCancelCommand *cmd);
+void create_fcw_command(FcwCommand *cmd);
+void create_ui_command(UICommand *cmd);
+void create_ipas_steer_command(SteeringIpasCommand *cmd, SteeringIpasCommaCommand *cmd2, bool apgs_enabled);
+void Encoder(void);
 static inline void set_bits_be(uint8_t *data, uint16_t start, uint8_t len, uint32_t value){
     if(len < 32){
         value &= (1u << len) - 1u;
@@ -65,4 +83,7 @@ static inline void set_bits_le(uint8_t *data, uint16_t start, uint8_t len, uint3
 }
 
 #define set_bits(data, start, len, value) set_bits_be((data), (start), (len), (value))
+
+void EncoderTask(void *pv);
+
 #endif

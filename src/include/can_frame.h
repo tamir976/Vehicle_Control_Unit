@@ -2,12 +2,14 @@
 #define INCLUDE_CAN_FRAME_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "FlexCAN_Ip.h"
 #include "FreeRTOS.h"
+#include "queue.h"
+#include "task.h"
 
 #define CAN_CACHE_SIZE (1024u)
 #define CAN_DEFAULT_TIMEOUT pdMS_TO_TICKS(1000u)
-
 
 static inline uint32_t CanHash(uint32_t id)
 {
@@ -21,7 +23,7 @@ typedef struct
     uint32_t id;
     uint8_t dlc;
     uint8_t data[8];
-    boolean valid;
+    bool valid;
     uint32_t timestamp;
     TickType_t lastRxTick;
 } CanFrameEntry;
@@ -41,8 +43,10 @@ extern CanFrameCache gCan1Cache;
 extern CanFrameCache gCan2Cache;
 extern CanFrameCache gCan3Cache;
 
-void CanCache_UpdateFromISR(uint8_t bus, const Flexcan_Ip_MsgBuffType *rxMsg);
+void CanCache_Update(uint8_t bus, const Flexcan_Ip_MsgBuffType *rxMsg);
 CanFrameEntry *CanCache_FindOrCreate(uint8_t bus, uint32_t id);
-boolean CanCache_CopyFrame(const CanFrameCache *cache, uint32_t id, CanFrameEntry *out);
+bool CanCache_CopyFrame(const CanFrameCache *cache, uint32_t id, CanFrameEntry *out);
+void CanCarRxTask(void *pv);
+void CanPcRxTask(void* pv);
 
 #endif /* INCLUDE_CAN_FRAME_H_ */

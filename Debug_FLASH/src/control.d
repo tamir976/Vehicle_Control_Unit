@@ -8,7 +8,7 @@ src/control.o: ../src/control.c ../src/include/control.h \
  ../FreeRTOS/Source/include/mpu_wrappers.h \
  ../FreeRTOS/Source/include/task.h ../FreeRTOS/Source/include/list.h \
  ../src/include/car_control.h ../src/include/car_state.h \
- ../RTD/include/FlexCAN_Ip.h \
+ ../src/include/encoder.h ../RTD/include/FlexCAN_Ip.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Mcal.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Compiler.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Compiler_Cfg.h \
@@ -106,8 +106,9 @@ src/control.o: ../src/control.c ../src/include/control.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Reg_eSys.h \
  ../RTD/include/FlexCAN_Ip_Types.h ../RTD/include/FlexCAN_Ip_Wrapper.h \
  C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Can_43_FLEXCAN_MemMap.h \
- ../src/include/encoder.h ../src/include/control.h \
- ../src/include/monitor.h ../src/include/decoder.h
+ ../src/include/control.h ../FreeRTOS/Source/include/queue.h \
+ ../FreeRTOS/Source/include/task.h ../src/include/monitor.h \
+ ../src/include/decoder.h ../src/include/flexcan_conf.h
 ../src/include/control.h:
 ../FreeRTOS/Source/include/FreeRTOS.h:
 C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/FreeRTOSConfig.h:
@@ -120,6 +121,7 @@ C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/FreeRTOSConfig.h:
 ../FreeRTOS/Source/include/list.h:
 ../src/include/car_control.h:
 ../src/include/car_state.h:
+../src/include/encoder.h:
 ../RTD/include/FlexCAN_Ip.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Mcal.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Compiler.h:
@@ -220,7 +222,9 @@ C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R
 ../RTD/include/FlexCAN_Ip_Types.h:
 ../RTD/include/FlexCAN_Ip_Wrapper.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/include/Can_43_FLEXCAN_MemMap.h:
-../src/include/encoder.h:
 ../src/include/control.h:
+../FreeRTOS/Source/include/queue.h:
+../FreeRTOS/Source/include/task.h:
 ../src/include/monitor.h:
 ../src/include/decoder.h:
+../src/include/flexcan_conf.h:

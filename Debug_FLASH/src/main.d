@@ -174,6 +174,7 @@ src/main.o: ../src/main.c \
  ../src/include/decoder.h ../src/include/car_state.h \
  ../src/include/car_control.h ../src/include/flexcan_conf.h \
  ../src/include/hacked_panda.h ../src/include/car_control.h \
+ ../src/include/control.h ../src/include/encoder.h \
  ../src/include/control.h
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344.h:
 C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R0/header/S32K344_ADC.h:
@@ -366,4 +367,6 @@ C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/FreeRTOSConfig.h:
 ../src/include/flexcan_conf.h:
 ../src/include/hacked_panda.h:
 ../src/include/car_control.h:
+../src/include/control.h:
+../src/include/encoder.h:
 ../src/include/control.h:

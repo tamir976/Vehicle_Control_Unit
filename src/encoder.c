@@ -1,34 +1,21 @@
 #include "include/encoder.h"
 #include "include/flexcan_conf.h"
 #include "include/monitor.h"
+#include "include/flexcan_conf.h"
+#include "include/can_frame.h"
+#include "queue.h"
+#include "FreeRTOS.h"
 
 
-void CAN_Send(uint32_t id, uint8_t bus, uint8_t *data, uint8_t dlc){
-    Flexcan_Ip_DataInfoType tx;
-    Flexcan_Ip_StatusType st = FLEXCAN_STATUS_ERROR;
-    tx.msg_id_type = FLEXCAN_MSG_ID_STD;
-    tx.data_length = dlc;
-    tx.is_polling = FALSE;
-    tx.fd_enable = FALSE;
-    tx.is_remote = FALSE;
-    if(bus == 0u){
-        st = CAN_SendFrameBlocking(INST_FLEXCAN0, &tx, id, data, 2u);
-    }
-    if(bus == 1u){
-        st = CAN_SendFrameBlocking(INST_FLEXCAN1, &tx, id, data, 2u);
-    }
-    if(bus == 2u){
-        st = CAN_SendFrameBlocking(INST_FLEXCAN2, &tx, id, data, 2u);
-    }   
-    if(bus == 3u){
-        st = CAN_SendFrameBlocking(INST_FLEXCAN3, &tx, id, data, 2u);
-    }
-
-    if (st != FLEXCAN_STATUS_SUCCESS)
-    {
-        gStats.canTxFails++;
-    }
-}
+MsgTimer_t gMsgTimers[] = {
+    {0, pdMS_TO_TICKS(10u)}, // Steer command timer
+    {0, pdMS_TO_TICKS(33u)}, // Accel command timer
+    {0, pdMS_TO_TICKS(100u)}, // PCS command timer
+    {0, pdMS_TO_TICKS(10u)}, // Acc cancel command timer when active
+    {0, pdMS_TO_TICKS(1000u)}, // FCW command timer
+    {0, pdMS_TO_TICKS(200u)}, // UI command timer
+    {0, pdMS_TO_TICKS(10u)}, // IPAS steer command timer
+};
 
 uint8_t calculate_checksum(uint32_t id, const uint8_t *data, uint8_t dlc){
     uint32_t sum = dlc;
@@ -50,10 +37,7 @@ uint8_t calculate_checksum(uint32_t id, const uint8_t *data, uint8_t dlc){
 }
 
 void encode_steer_command(uint32_t id, SteerCommand *cmd, uint8_t dlc){
-    if (cmd == NULL)
-    {
-        return;
-    }
+    
     memset(cmd->data, 0, 8u);
     set_bits(cmd->data, 0, 1, cmd->STEER_REQUEST);
     set_bits(cmd->data, 6, 6, cmd->COUNTER);
@@ -64,11 +48,8 @@ void encode_steer_command(uint32_t id, SteerCommand *cmd, uint8_t dlc){
     cmd->COUNTER = (cmd->COUNTER + 1u) % 0x40u;
 }
 
-void encode_accel_command(uint32_t id, AccelCommand *cmd, uint8_t dlc){
-    if (cmd == NULL)
-    {
-        return;
-    }
+void encode_acc_command(uint32_t id, AccelCommand *cmd, uint8_t dlc){
+    
     memset(cmd->data, 0, 8u);
     int32_t accel_raw = (int32_t)(cmd->ACCEL_CMD * 1000.0f);
     if (accel_raw > 32767)
@@ -107,10 +88,7 @@ void encode_accel_command(uint32_t id, AccelCommand *cmd, uint8_t dlc){
 }
 
 void encode_pcs_command(uint32_t id, PcsCommand *cmd, uint8_t dlc){
-    if(cmd == NULL)
-    {
-        return;
-    }
+    
     memset(cmd->data, 0, 8u);
     set_bits(cmd->data, 7, 8, cmd->COUNTER);
     set_bits(cmd->data, 15, 8, cmd->SET_ME_X00);
@@ -126,9 +104,7 @@ void encode_pcs_command(uint32_t id, PcsCommand *cmd, uint8_t dlc){
 }
 
 void encode_pcs_command_2(uint32_t id, PcsCommand_2 *cmd, uint8_t dlc){
-    if(cmd == NULL){
-        return;
-    }
+    
     memset(cmd->data, 0, 8u);
     set_bits(cmd->data, 7, 10, (uint16_t)cmd->DSS1GDRV);
     set_bits(cmd->data, 17, 1, cmd->PCSALM);
@@ -141,9 +117,7 @@ void encode_pcs_command_2(uint32_t id, PcsCommand_2 *cmd, uint8_t dlc){
 }
 
 void encode_acc_cancel_command(uint32_t id, AccelCancelCommand *cmd, uint8_t dlc){
-    if(cmd == NULL){
-        return;
-    }
+    
     memset(cmd->data, 0, 8u);
     int32_t accel_net_raw = (int32_t)(cmd->ACCEL_NET * 1024.0f);
 
@@ -168,9 +142,9 @@ void encode_acc_cancel_command(uint32_t id, AccelCancelCommand *cmd, uint8_t dlc
 }
 
 void encode_fcw_command(uint32_t id, FcwCommand *cmd, uint8_t dlc){
-    if(cmd == NULL){
-        return;
-    }
+    
+    (void)id;
+    (void)dlc;
     memset(cmd->data, 0, 8u);
     set_bits(cmd->data, 7, 2, cmd->PCS_INDICATOR);
     set_bits(cmd->data, 4, 1, cmd->FCW);
@@ -186,9 +160,9 @@ void encode_fcw_command(uint32_t id, FcwCommand *cmd, uint8_t dlc){
 }
 
 void encode_ui_command(uint32_t id, UICommand *cmd, uint8_t dlc){
-    if(cmd == NULL){
-        return;
-    }
+    
+    (void)id;
+    (void)dlc;
     memset(cmd->data, 0, 8u);
     set_bits(cmd->data, 1, 2, cmd->BARRIERS);
     set_bits(cmd->data, 3, 2, cmd->RIGHT_LINE);
@@ -218,9 +192,7 @@ void encode_ui_command(uint32_t id, UICommand *cmd, uint8_t dlc){
 }
 
 void encode_ipas_steer_command(uint32_t id, SteeringIpasCommand *cmd, uint8_t dlc){
-    if(cmd == NULL){
-        return;
-    }
+    
     memset(cmd->data, 0, 8u);
     set_bits(cmd->data, 7, 4, cmd->STATE);
     set_bits(cmd->data, 3, 12, cmd->ANGLE);
@@ -234,9 +206,6 @@ void encode_ipas_steer_command(uint32_t id, SteeringIpasCommand *cmd, uint8_t dl
 }
 
 void encode_ipas_steer_comma_command(uint32_t id, SteeringIpasCommaCommand *cmd, uint8_t dlc){
-    if(cmd == NULL){
-        return;
-    }
     memset(cmd->data, 0, 8u);
     set_bits(cmd->data, 7, 4, cmd->STATE);
     set_bits(cmd->data, 3, 12, cmd->ANGLE);
@@ -247,4 +216,146 @@ void encode_ipas_steer_comma_command(uint32_t id, SteeringIpasCommaCommand *cmd,
     set_bits(cmd->data, 55, 8, cmd->SET_ME_X00_1);   
     cmd->CHECKSUM = calculate_checksum(id, cmd->data, dlc);
     set_bits(cmd->data, 63, 8, cmd->CHECKSUM);   
+}
+
+void SendFrame(uint8_t instance, uint32_t msg_id, uint8_t *data, uint8_t dlc){
+    Flexcan_Ip_DataInfoType txi = {0};
+    txi.msg_id_type = FLEXCAN_MSG_ID_STD;
+    txi.fd_enable = false;
+    txi.is_polling = false;
+    txi.is_remote = false;
+    txi.data_length = dlc;
+    int32_t mbx = GetTxMB(instance);
+    if(mbx >= 0){
+        (void)FlexCAN_Ip_Send(instance, mbx, &txi, msg_id, data);
+    }
+}
+
+void create_steer_command(SteerCommand *cmd){
+    uint8_t bus = 0u;
+    uint32_t msg_id = ID_STEERING_LKA;
+    uint8_t dlc = 5u;
+    uint8_t data[8];
+    taskENTER_CRITICAL();
+    encode_steer_command(msg_id, cmd, dlc);
+    memcpy(data, cmd->data, dlc);
+    taskEXIT_CRITICAL();
+    SendFrame(bus, msg_id, data, dlc);
+}
+void create_acc_command(AccelCommand *cmd){
+    uint8_t bus = 0u;
+    uint32_t msg_id = ID_ACC_CONTROL;
+    uint8_t dlc = 8u;
+    uint8_t data[8];
+    taskENTER_CRITICAL();
+    encode_acc_command(msg_id, cmd, dlc);
+    memcpy(data, cmd->data, dlc);
+    taskEXIT_CRITICAL();
+    SendFrame(bus, msg_id, data, dlc);
+}
+void create_pcs_commands(PcsCommand *cmd, PcsCommand_2 *cmd2){
+    uint8_t bus = 0u;
+    uint32_t msg_id = ID_PRE_COLLISION;
+    uint32_t msg_id_2 = ID_PRE_COLLISION_2;
+    uint8_t dlc = 7u;
+    uint8_t dlc2 = 8u;
+    uint8_t data1[8];
+    uint8_t data2[8];
+    taskENTER_CRITICAL();
+    encode_pcs_command(msg_id, cmd, dlc);
+    encode_pcs_command_2(msg_id_2, cmd2, dlc2);
+    memcpy(data1, cmd->data, dlc);
+    memcpy(data2, cmd2->data, dlc2);
+    taskEXIT_CRITICAL();
+    SendFrame(bus, msg_id, data1, dlc);
+    SendFrame(bus, msg_id_2, data2, dlc2);
+}
+
+void create_acc_cancel_command(AccelCancelCommand *cmd){
+    uint8_t bus = 0;
+    uint32_t msg_id = ID_PCM_CRUISE;
+    uint8_t dlc = 8u;
+    uint8_t data[8];
+    taskENTER_CRITICAL();
+    encode_acc_cancel_command(msg_id, cmd, dlc);
+    memcpy(data, cmd->data, dlc);
+    taskEXIT_CRITICAL();
+    SendFrame(bus, msg_id, data, dlc);
+}
+void create_fcw_command(FcwCommand *cmd){
+    uint8_t bus = 0;
+    uint32_t msg_id = ID_PCS_HUD;
+    uint8_t dlc = 8u;
+    uint8_t data[8];
+    taskENTER_CRITICAL();
+    encode_fcw_command(msg_id, cmd, dlc);
+    memcpy(data, cmd->data, dlc);
+    taskEXIT_CRITICAL();
+    SendFrame(bus, msg_id, data, dlc);
+}
+void create_ui_command(UICommand *cmd){
+    uint8_t bus = 0;
+    uint32_t msg_id = ID_LKAS_HUD;
+    uint8_t dlc = 8u;
+    uint8_t data[8];
+    taskENTER_CRITICAL();
+    encode_ui_command(msg_id, cmd, dlc);
+    memcpy(data, cmd->data, dlc);
+    taskEXIT_CRITICAL();
+    SendFrame(bus, msg_id, data, dlc);
+}
+void create_ipas_steer_command(SteeringIpasCommand *cmd, SteeringIpasCommaCommand *cmd2, bool apgs_enabled){
+    uint8_t bus = 0;
+    uint32_t msg_id = ID_STEERING_IPAS;
+    uint8_t dlc = 8u;
+    uint8_t data[8];
+    (void)cmd2;
+    if(apgs_enabled){
+        taskENTER_CRITICAL();
+        encode_ipas_steer_command(msg_id, cmd, dlc);
+        memcpy(data, cmd->data, dlc);
+        taskEXIT_CRITICAL();
+        SendFrame(bus, msg_id, data, dlc);
+    }
+}
+
+void Encoder(void){
+    TickType_t now = xTaskGetTickCount();
+    if((now - gMsgTimers[0].last_run) >= gMsgTimers[0].period){
+        gMsgTimers[0].last_run = now;
+        create_steer_command(&gSteerCommand);
+    }
+    if ((now - gMsgTimers[1].last_run) >= gMsgTimers[1].period){
+        gMsgTimers[1].last_run = now;
+        create_acc_command(&gAccelCommand);
+    }
+    if ((now - gMsgTimers[2].last_run) >= gMsgTimers[2].period){
+        gMsgTimers[2].last_run = now;
+        create_pcs_commands(&gPcsCommand, &gPcsCommand2);
+    }
+    if ((now - gMsgTimers[3].last_run) >= gMsgTimers[3].period){
+        gMsgTimers[3].last_run = now;
+        create_acc_cancel_command(&gAccelCancelCommand);
+    }
+    if ((now - gMsgTimers[4].last_run) >= gMsgTimers[4].period){
+        gMsgTimers[4].last_run = now;
+        create_fcw_command(&gFcwCommand);
+    }
+    if ((now - gMsgTimers[5].last_run) >= gMsgTimers[5].period){
+        gMsgTimers[5].last_run = now;
+        create_ui_command(&gUICommand);
+    }
+    if ((now - gMsgTimers[6].last_run) >= gMsgTimers[6].period){
+        gMsgTimers[6].last_run = now;
+        create_ipas_steer_command(&gSteeringIpasCommand, &gSteeringIpasCommaCommand, true);
+    }
+}
+
+void EncoderTask(void *pv){
+    (void)pv;
+    TickType_t lastWake = xTaskGetTickCount();
+    for(;;){
+        Encoder();
+        vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(10));
+    }
 }

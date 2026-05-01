@@ -1,5 +1,6 @@
 #include "include/can_frame.h"
 #include "include/monitor.h"
+#include "include/flexcan_conf.h"
 #include <task.h>
 #include <string.h>
 
@@ -8,20 +9,16 @@ CanFrameEntry bus1Table[CAN_CACHE_SIZE];
 CanFrameEntry bus2Table[CAN_CACHE_SIZE];
 CanFrameEntry bus3Table[CAN_CACHE_SIZE];
 
-CanFrameCache gCan0Cache =
-{
+CanFrameCache gCan0Cache ={
     .entries = bus0Table,
 };
-CanFrameCache gCan1Cache =
-{
+CanFrameCache gCan1Cache ={
     .entries = bus1Table,
 };
-CanFrameCache gCan2Cache =
-{
+CanFrameCache gCan2Cache ={
     .entries = bus2Table,
 };
-CanFrameCache gCan3Cache =
-{
+CanFrameCache gCan3Cache ={
     .entries = bus3Table,
 };
 
@@ -60,16 +57,11 @@ CanFrameEntry *CanCache_FindOrCreate(uint8_t bus, uint32_t id)
     }
 }
 
-boolean CanCache_CopyFrame(const CanFrameCache *cache, uint32_t id, CanFrameEntry *out)
+bool CanCache_CopyFrame(const CanFrameCache *cache, uint32_t id, CanFrameEntry *out)
 {
     uint32_t index;
     uint32_t start;
-    boolean found;
-
-    if ((cache == NULL) || (out == NULL))
-    {
-        return FALSE;
-    }
+    bool found;
 
     index = CanHash(id);
     start = index;
@@ -100,19 +92,13 @@ boolean CanCache_CopyFrame(const CanFrameCache *cache, uint32_t id, CanFrameEntr
 
     return found;
 }
-void CanCache_UpdateFromISR(uint8_t bus, const Flexcan_Ip_MsgBuffType *rxMsg)
+void CanCache_Update(uint8_t bus, const Flexcan_Ip_MsgBuffType *rxMsg)
 {
-    uint32_t id;
-    uint8_t dlc;
-    CanFrameEntry *entry;
-    UBaseType_t savedInterruptStatus;
-
-    id = rxMsg->msgId;
-    dlc = rxMsg->dataLen;
-
-    savedInterruptStatus = taskENTER_CRITICAL_FROM_ISR();
-
-    entry = CanCache_FindOrCreate(bus, id);
+    uint32_t id = rxMsg->msgId;
+    uint8_t dlc = rxMsg->dataLen;
+    
+    taskENTER_CRITICAL();
+    CanFrameEntry *entry = CanCache_FindOrCreate(bus, id);    
     if (entry != NULL)
     {
         entry->dlc = dlc;
@@ -123,14 +109,35 @@ void CanCache_UpdateFromISR(uint8_t bus, const Flexcan_Ip_MsgBuffType *rxMsg)
             (void)memset(&entry->data[dlc], 0, (8u - dlc));
         }
 
-        entry->valid = TRUE;
+        entry->valid = true;
         entry->timestamp = rxMsg->time_stamp;
-        entry->lastRxTick = xTaskGetTickCountFromISR();
+        entry->lastRxTick = xTaskGetTickCount();
+        
     }
-    else
-    {
-        gStats.canCacheOverflow++;
-    }
+    taskEXIT_CRITICAL();
+}
 
-    taskEXIT_CRITICAL_FROM_ISR(savedInterruptStatus);
+
+void CanCarRxTask(void *pv){
+    (void)pv;
+    CanRx canRx_;
+    TickType_t lastWake = xTaskGetTickCount();
+    for(;;){
+        if(xQueueReceive(g_canCarRxQueue, &canRx_, portMAX_DELAY) == pdTRUE){
+            CanCache_Update(canRx_.instance, &canRx_.frame);
+        }
+        vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(1));
+    }
+}
+
+void CanPcRxTask(void *pv){
+    (void)pv;
+    CanRx canRx_;
+    TickType_t lastWake = xTaskGetTickCount();
+    for(;;){
+        if(xQueueReceive(g_canPcRxQueue, &canRx_, portMAX_DELAY) == pdTRUE){
+            CanCache_Update(canRx_.instance, &canRx_.frame);
+        }
+        vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(1));
+    }
 }
