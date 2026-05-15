@@ -26,7 +26,6 @@ void encode_acc_cancel_command(uint32_t id, AccelCancelCommand *cmd, uint8_t dlc
 void encode_fcw_command(uint32_t id, FcwCommand *cmd, uint8_t dlc);
 void encode_ui_command(uint32_t id, UICommand *cmd, uint8_t dlc);
 void encode_ipas_steer_command(uint32_t id, SteeringIpasCommand *cmd, uint8_t dlc);
-void encode_ipas_steer_comma_command(uint32_t id, SteeringIpasCommaCommand *cmd, uint8_t dlc);
 uint8_t calculate_checksum(uint32_t id, const uint8_t *data, uint8_t dlc);
 void create_steer_command(SteerCommand *cmd);
 void create_acc_command(AccelCommand *cmd);
@@ -34,7 +33,7 @@ void create_pcs_commands(PcsCommand *cmd, PcsCommand_2 *cmd2);
 void create_acc_cancel_command(AccelCancelCommand *cmd);
 void create_fcw_command(FcwCommand *cmd);
 void create_ui_command(UICommand *cmd);
-void create_ipas_steer_command(SteeringIpasCommand *cmd, SteeringIpasCommaCommand *cmd2, bool apgs_enabled);
+void create_ipas_steer_command(SteeringIpasCommand *cmd, bool apgs_enabled);
 void Encoder(void);
 static inline void set_bits_be(uint8_t *data, uint16_t start, uint8_t len, uint32_t value){
     if(len < 32){

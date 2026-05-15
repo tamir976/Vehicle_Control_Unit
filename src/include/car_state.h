@@ -6,9 +6,6 @@
 #include <FreeRTOS.h>
 #include <stdbool.h>
 
-#define MAX_BUTTON_EVENTS 4
-
-
 #define ID_KINEMATICS (0x24u)
 #define ID_STEER_ANGLE_SENSOR (0x25u)
 #define ID_WHEEL_SPEEDS (0xAAu)
@@ -40,12 +37,13 @@
 #define ID_PRE_COLLISION_2 (0x344)
 #define ID_ENGINE_RPM (0x1C4u)
 #define ID_GAS_PEDAL_HYBRID (0x245u)
+#define ID_LTA_RELATED (0x371u)
 
 
 typedef struct {
 	bool enabled; //cruise enable is used for acc
-    float speed;
-    float speedCluster;
+    float SetSpeed;
+    float vEgoCluster;
     bool available;
     float speedOffset;
     bool standStill;
@@ -57,7 +55,8 @@ typedef enum {
     park,
     drive,
     neutral,
-    reverse
+    reverse,
+    s
 } GearShifter;
 
 typedef enum {
@@ -73,6 +72,13 @@ typedef enum {
     gadAdjustCruise
 } Type;
 
+typedef enum{
+    ipas_unknown = 0u,
+    disabled = 1u,
+    enabled = 3u,
+    override = 5u
+} IpasState;
+
 typedef struct 
 {
     float vEgo; //velocity used for acc
@@ -84,9 +90,12 @@ typedef struct
     bool brakePressed; //safety guards
     bool parkingBrake; //safety guards
     float steeringAngleDeg; //steeringAngle
-    float steeringAngleOffsetDeg; //no use
-    float steeringRateDeg; //no use
-    float steeringTorque; //no use
+    int32_t steeringRateDeg; //no use
+    int32_t steeringTorque; //used for ipas_steering calculation
+    int32_t steeringTorqueEps; //no use
+    uint8_t pcmAccStatus; //used for acc standstill state
+    uint8_t pcmFollowDistance; //used for acc distance button
+    uint8_t accType; //used for acc command
     float steeringPressed; //safety guard
     bool accFaulted; //it is for lockout state
     bool lockoutState; //lockout state pcm cruise
@@ -95,8 +104,8 @@ typedef struct
     Type buttonType; //no use
     bool leftBlinker; //no use
     bool rightBlinker; //no use
-    bool ipasActive; //ipas_steering used for
-    float gasPedal; //no use
+    bool hazardLight; //no use
+    IpasState ipasState; //ipas_steering used for
     CruiseState cruiseState; //
     TickType_t last_update_tick;
 }CarState;

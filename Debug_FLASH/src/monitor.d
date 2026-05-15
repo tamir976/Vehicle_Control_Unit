@@ -119,7 +119,8 @@ src/monitor.o: ../src/monitor.c ../src/include/monitor.h \
  ../FreeRTOS/Source/include/queue.h ../FreeRTOS/Source/include/task.h \
  ../src/include/oled_display.h ../src/include/can_frame.h \
  ../src/include/car_control.h ../src/include/decoder.h \
- ../src/include/car_state.h ../src/include/car_control.h
+ ../src/include/car_state.h ../src/include/car_control.h \
+ ../src/include/control.h
 ../src/include/monitor.h:
 ../FreeRTOS/Source/include/FreeRTOS.h:
 C\:/Users/20235607/VCU_Prius/VCU_prius/generate/include/FreeRTOSConfig.h:
@@ -252,3 +253,4 @@ C\:/NXP/S32DS.3.6.5/S32DS/software/PlatformSDK_S32K3/RTD/BaseNXP_TS_T40D34M70I0R
 ../src/include/decoder.h:
 ../src/include/car_state.h:
 ../src/include/car_control.h:
+../src/include/control.h:

@@ -1,12 +1,14 @@
 #include "include/monitor.h"
 #include <Lpuart_Uart_Ip.h>
 #include <Lpuart_Uart_Ip_Sa_PBcfg.h>
+#include <stdio.h>
 #include "include/car_state.h"
 #include "include/flexcan_conf.h"
 #include "include/oled_display.h"
 #include "include/can_frame.h"
 #include "include/car_control.h"
 #include "include/decoder.h"
+#include "include/control.h"
 
 
 void CanCache_RefreshValidity(void)
@@ -50,6 +52,56 @@ void MonitorTask(void *pv)
     for (;;)
     {
         CanCache_RefreshValidity();
-        vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(100u));
+        CarControl ccSnap;
+        CarState csSnap;
+        SteeringIpasCommand ipasSnap;
+        IpasControllerState ipasStateSnap;
+        int32_t reqCentiDeg;
+        int32_t reqAbsCentiDeg;
+        int32_t outCentiDeg;
+        int32_t outAbsCentiDeg;
+        const char *reqSign;
+        const char *outSign;
+
+        taskENTER_CRITICAL();
+        ccSnap = gCarControl[CcActiveId];
+        csSnap = gCarState[CsActiveId];
+        ipasSnap = gSteeringIpasCommand;
+        ipasStateSnap = gIpasControllerState;
+        taskEXIT_CRITICAL();
+
+        reqCentiDeg = (ccSnap.actuators.steeringAngleDegCmd >= 0.0f)
+                    ? (int32_t)((ccSnap.actuators.steeringAngleDegCmd * 100.0f) + 0.5f)
+                    : (int32_t)((ccSnap.actuators.steeringAngleDegCmd * 100.0f) - 0.5f);
+        reqAbsCentiDeg = (reqCentiDeg < 0) ? -reqCentiDeg : reqCentiDeg;
+        reqSign = (reqCentiDeg < 0) ? "-" : "";
+        outCentiDeg = (ipasSnap.ANGLE >= 0.0f)
+                    ? (int32_t)((ipasSnap.ANGLE * 100.0f) + 0.5f)
+                    : (int32_t)((ipasSnap.ANGLE * 100.0f) - 0.5f);
+        outAbsCentiDeg = (outCentiDeg < 0) ? -outCentiDeg : outCentiDeg;
+        outSign = (outCentiDeg < 0) ? "-" : "";
+
+        char buffer[128];
+        int length = snprintf(buffer, sizeof(buffer),
+                              "cc=%s%ld.%02ld out=%s%ld.%02ld ipas=%u en=%u st=%u\r\n",
+                              reqSign,
+                              (long)(reqAbsCentiDeg / 100),
+                              (long)(reqAbsCentiDeg % 100),
+                              outSign,
+                              (long)(outAbsCentiDeg / 100),
+                              (long)(outAbsCentiDeg % 100),
+                              (unsigned)csSnap.ipasState,
+                              (unsigned)ipasStateSnap.steer_angle_enabled,
+                              (unsigned)ipasSnap.STATE);
+
+        if (length > 0)
+        {
+            (void)Lpuart_Uart_Ip_SyncSend(INST_UART2,
+                                         (const uint8_t *)buffer,
+                                         (uint32_t)length,
+                                         10000u);
+        }
+
+        vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(500u));
     }
 }

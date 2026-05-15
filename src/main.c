@@ -190,6 +190,7 @@ void FlexcanCar_callback(uint8_t instance,
     if (eventType == FLEXCAN_EVENT_TX_COMPLETE){
         ReleaseTxMb(instance, (uint8_t)buffIdx);
     }
+    portYIELD_FROM_ISR(higherTaskWoken);
 }
 
 void FlexcanPC_callback(uint8_t instance,
@@ -201,7 +202,9 @@ void FlexcanPC_callback(uint8_t instance,
     BaseType_t higherTaskWoken = pdFALSE;
     if (eventType == FLEXCAN_EVENT_RX_COMPLETE){
         Flexcan_Ip_MsgBuffType *rxBuf = NULL;
-        rxBuf = &can3_rx[buffIdx];
+        if((instance == INST_FLEXCAN3) && (buffIdx < CAN3_RX_SIZE)){
+            rxBuf = &can3_rx[buffIdx];
+        }
         if(rxBuf != NULL){
             CanRx frame;
             frame.instance = instance;
@@ -215,6 +218,7 @@ void FlexcanPC_callback(uint8_t instance,
             ReleaseTxMb(instance, (uint8_t)buffIdx);
         }
     }
+    portYIELD_FROM_ISR(higherTaskWoken);
 }
 
 void EPS_callback_CAN4(uint8_t instance, Flexcan_Ip_EventType eventType,
@@ -225,6 +229,7 @@ void EPS_callback_CAN4(uint8_t instance, Flexcan_Ip_EventType eventType,
         (void)FlexCAN_Ip_Receive(instance, buffIdx, &can4_rx[buffIdx], false);
         BaseType_t higherTaskWoken = pdFALSE;
         (void)xQueueSendFromISR(epsQueue4, &can4_rx[buffIdx], &higherTaskWoken);
+        portYIELD_FROM_ISR(higherTaskWoken);
     }
     else if(eventType == FLEXCAN_EVENT_TX_COMPLETE){
         ReleaseTxMb(instance, (uint8_t)buffIdx);
@@ -239,6 +244,7 @@ void EPS_callback_CAN5(uint8_t instance, Flexcan_Ip_EventType eventType,
         (void)FlexCAN_Ip_Receive(instance, buffIdx, &can5_rx[buffIdx], false);
         BaseType_t higherTaskWoken = pdFALSE;
         (void)xQueueSendFromISR(epsQueue5, &can5_rx[buffIdx], &higherTaskWoken);
+        portYIELD_FROM_ISR(higherTaskWoken);
     }
     else if(eventType == FLEXCAN_EVENT_TX_COMPLETE){
         ReleaseTxMb(instance, (uint8_t)buffIdx);
@@ -250,8 +256,8 @@ void Flexcan_error_callback(uint8_t instance,
             uint32_t u32ErrStatus, 
             const Flexcan_Ip_StateType *state){
     (void)state;
-    (void)u32ErrStatus;
     (void)eventType;
+    (void)u32ErrStatus;
     (void)instance;
 }
 
@@ -298,15 +304,15 @@ int main(void)
     g_canPcRxQueue = xQueueCreate(8, sizeof(CanRx));
     Init_TxPool();
     Can_Init();
-   xTaskCreate(StaticDSUTask, "StaticDSU", 512u, NULL, 4u, NULL);
-    xTaskCreate(CanCarRxTask, "CanCar", 512u, NULL, 4u, NULL);
-    xTaskCreate(CanPcRxTask, "CanPc", 256u, NULL, 4u, NULL);
-    xTaskCreate(CsDecodeTask, "CSDecoder", 1024u, NULL, 4u, NULL);
-    xTaskCreate(CcDecodeTask, "CCDecoder", 512u, NULL, 4u, NULL);
-    xTaskCreate(MonitorTask, "Monitor", 256u, NULL, 4u, NULL);
-    xTaskCreate(EPS4Task, "EPS4", 128u, NULL, 4u, NULL);
-    xTaskCreate(EPS5Task, "EPS5", 128u, NULL, 4u, NULL);
-    xTaskCreate(ControlTask, "Control", 1024u, NULL, 4u, NULL);
+    xTaskCreate(StaticDSUTask, "StaticDSU", 256u, NULL, 4u, NULL);
+    xTaskCreate(CanCarRxTask, "CanCar", 512u, NULL, 3u, NULL);
+    xTaskCreate(CanPcRxTask, "CanPc", 512u, NULL, 3u, NULL);
+    xTaskCreate(CsDecodeTask, "CSDecoder", 1024u, NULL, 1u, NULL);
+    xTaskCreate(CcDecodeTask, "CCDecoder", 1024u, NULL, 1u, NULL);
+    xTaskCreate(MonitorTask, "Monitor", 512u, NULL, 0u, NULL);
+    xTaskCreate(EPS4Task, "EPS4", 128u, NULL, 3u, NULL);
+    xTaskCreate(EPS5Task, "EPS5", 128u, NULL, 3u, NULL);
+    xTaskCreate(ControlTask, "Control", 1024u, NULL, 2u, NULL);
     xTaskCreate(EncoderTask, "Encoder", 512u, NULL, 4u, NULL);
     oled_draw_text(0u, 0u, "Initialized");
     vTaskStartScheduler();

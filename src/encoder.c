@@ -36,13 +36,37 @@ uint8_t calculate_checksum(uint32_t id, const uint8_t *data, uint8_t dlc){
     return (uint8_t)(sum & 0xFFu);
 }
 
+static int32_t round_to_i32(float value)
+{
+    return (value >= 0.0f) ? (int32_t)(value + 0.5f) : (int32_t)(value - 0.5f);
+}
+
+static int32_t clamp_i32(int32_t value, int32_t min_value, int32_t max_value)
+{
+    if(value > max_value){
+        return max_value;
+    }
+    if(value < min_value){
+        return min_value;
+    }
+    return value;
+}
+
+static uint32_t signed_signal_raw(float phys, float scale, float offset, uint8_t length)
+{
+    const int32_t min_value = -(1L << (length - 1u));
+    const int32_t max_value = (1L << (length - 1u)) - 1L;
+    const int32_t raw = clamp_i32(round_to_i32((phys - offset) / scale), min_value, max_value);
+    return ((uint32_t)raw) & ((1UL << length) - 1UL);
+}
+
 void encode_steer_command(uint32_t id, SteerCommand *cmd, uint8_t dlc){
     
     memset(cmd->data, 0, 8u);
     set_bits(cmd->data, 0, 1, cmd->STEER_REQUEST);
     set_bits(cmd->data, 6, 6, cmd->COUNTER);
     set_bits(cmd->data, 7, 1, cmd->SET_ME_1);
-    set_bits(cmd->data, 15, 16, cmd->STEER_TORQUE_CMD);
+    set_bits(cmd->data, 15, 16, signed_signal_raw((float)cmd->STEER_TORQUE_CMD, 1.0f, 0.0f, 16u));
     cmd->CHECKSUM = calculate_checksum(id, cmd->data, dlc);
     set_bits(cmd->data, 39, 8, cmd->CHECKSUM);
     cmd->COUNTER = (cmd->COUNTER + 1u) % 0x40u;
@@ -51,16 +75,7 @@ void encode_steer_command(uint32_t id, SteerCommand *cmd, uint8_t dlc){
 void encode_acc_command(uint32_t id, AccelCommand *cmd, uint8_t dlc){
     
     memset(cmd->data, 0, 8u);
-    int32_t accel_raw = (int32_t)(cmd->ACCEL_CMD * 1000.0f);
-    if (accel_raw > 32767)
-    {
-        accel_raw = 32767;
-    }
-    else if (accel_raw < -32768)
-    {
-        accel_raw = -32768;
-    }
-    set_bits(cmd->data, 7, 16, (uint16_t)((int16_t)accel_raw));
+    set_bits(cmd->data, 7, 16, signed_signal_raw(cmd->ACCEL_CMD, 0.001f, 0.0f, 16u));
     set_bits(cmd->data, 17, 2, cmd->ALLOW_LONG_PRESS);
     set_bits(cmd->data, 18, 1, cmd->ACC_MALFUNCTION);
     set_bits(cmd->data, 19, 1, cmd->RADAR_DIRTY);
@@ -73,16 +88,7 @@ void encode_acc_command(uint32_t id, AccelCommand *cmd, uint8_t dlc){
     set_bits(cmd->data, 30, 1, cmd->PERMIT_BRAKING);
     set_bits(cmd->data, 31, 1, cmd->RELEASE_STANSTILL);
     set_bits(cmd->data, 39, 8, cmd->ITS_CONNECT_LEAD);
-    int32_t accel_alt_raw = (int32_t)(cmd->ACCEL_CMD_ALT * 20.0f);
-    if(accel_alt_raw > 127)
-    {
-        accel_alt_raw = 127;
-    }
-    else if (accel_alt_raw < -128)
-    {
-        accel_alt_raw = -128;
-    }
-    set_bits(cmd->data, 47, 8, (uint16_t)((int16_t)accel_alt_raw));
+    set_bits(cmd->data, 47, 8, signed_signal_raw(cmd->ACCEL_CMD_ALT, 0.05f, 0.0f, 8u));
     cmd->CHECKSUM = calculate_checksum(id, cmd->data, dlc);
     set_bits(cmd->data, 63, 8, cmd->CHECKSUM);
 }
@@ -92,7 +98,7 @@ void encode_pcs_command(uint32_t id, PcsCommand *cmd, uint8_t dlc){
     memset(cmd->data, 0, 8u);
     set_bits(cmd->data, 7, 8, cmd->COUNTER);
     set_bits(cmd->data, 15, 8, cmd->SET_ME_X00);
-    set_bits(cmd->data, 23, 16, cmd->FORCE);
+    set_bits(cmd->data, 23, 16, signed_signal_raw((float)cmd->FORCE, 2.0f, 0.0f, 16u));
     set_bits(cmd->data, 33, 8, cmd->SET_ME_X002);
     set_bits(cmd->data, 39, 3, cmd->BRAKE_STATUS);
     set_bits(cmd->data, 36, 3, cmd->STATE);
@@ -106,7 +112,7 @@ void encode_pcs_command(uint32_t id, PcsCommand *cmd, uint8_t dlc){
 void encode_pcs_command_2(uint32_t id, PcsCommand_2 *cmd, uint8_t dlc){
     
     memset(cmd->data, 0, 8u);
-    set_bits(cmd->data, 7, 10, (uint16_t)cmd->DSS1GDRV);
+    set_bits(cmd->data, 7, 10, signed_signal_raw(cmd->DSS1GDRV, 0.1f, 0.0f, 10u));
     set_bits(cmd->data, 17, 1, cmd->PCSALM);
     set_bits(cmd->data, 27, 1, cmd->IBTRGR);
     set_bits(cmd->data, 30, 2, cmd->PBATRGR);
@@ -119,22 +125,11 @@ void encode_pcs_command_2(uint32_t id, PcsCommand_2 *cmd, uint8_t dlc){
 void encode_acc_cancel_command(uint32_t id, AccelCancelCommand *cmd, uint8_t dlc){
     
     memset(cmd->data, 0, 8u);
-    int32_t accel_net_raw = (int32_t)(cmd->ACCEL_NET * 1024.0f);
-
-    if (accel_net_raw > 32767)
-    {
-        accel_net_raw = 32767;
-    }
-    else if (accel_net_raw < -32768)
-    {
-        accel_net_raw = -32768;
-    }
-
     set_bits(cmd->data, 4, 1, cmd->GAS_RELEASED);
     set_bits(cmd->data, 5, 1, cmd->CRUISE_ACTIVE);
     set_bits(cmd->data, 12, 1, cmd->ACC_BRAKING);
-    set_bits(cmd->data, 23, 16, (uint16_t)((int16_t)accel_net_raw));
-    set_bits(cmd->data, 39, 16, cmd->NEUTRAL_FORCE);
+    set_bits(cmd->data, 23, 16, signed_signal_raw(cmd->ACCEL_NET, 0.0009765625f, 0.0f, 16u));
+    set_bits(cmd->data, 39, 16, signed_signal_raw((float)cmd->NEUTRAL_FORCE, 2.0f, 0.0f, 16u));
     set_bits(cmd->data, 55, 4, cmd->CRUISE_STATE);
     set_bits_le(cmd->data, 49, 1, cmd->CANCEL_REQ);
     cmd->CHECKSUM = calculate_checksum(id, cmd->data, dlc);
@@ -192,10 +187,9 @@ void encode_ui_command(uint32_t id, UICommand *cmd, uint8_t dlc){
 }
 
 void encode_ipas_steer_command(uint32_t id, SteeringIpasCommand *cmd, uint8_t dlc){
-    
     memset(cmd->data, 0, 8u);
     set_bits(cmd->data, 7, 4, cmd->STATE);
-    set_bits(cmd->data, 3, 12, cmd->ANGLE);
+    set_bits(cmd->data, 3, 12, signed_signal_raw(cmd->ANGLE, 1.5f, 0.0f, 12u));
     set_bits(cmd->data, 23, 8, cmd->SET_ME_X10);
     set_bits(cmd->data, 31, 8, cmd->SET_ME_X00);
     set_bits(cmd->data, 38, 2, cmd->DIRECTION_CMD);
@@ -203,19 +197,6 @@ void encode_ipas_steer_command(uint32_t id, SteeringIpasCommand *cmd, uint8_t dl
     set_bits(cmd->data, 55, 8, cmd->SET_ME_X00_1);   
     cmd->CHECKSUM = calculate_checksum(id, cmd->data, dlc);
     set_bits(cmd->data, 63, 8, cmd->CHECKSUM);
-}
-
-void encode_ipas_steer_comma_command(uint32_t id, SteeringIpasCommaCommand *cmd, uint8_t dlc){
-    memset(cmd->data, 0, 8u);
-    set_bits(cmd->data, 7, 4, cmd->STATE);
-    set_bits(cmd->data, 3, 12, cmd->ANGLE);
-    set_bits(cmd->data, 23, 8, cmd->SET_ME_X10);
-    set_bits(cmd->data, 31, 8, cmd->SET_ME_X00);
-    set_bits(cmd->data, 38, 2, cmd->DIRECTION_CMD);
-    set_bits(cmd->data, 47, 8, cmd->SET_ME_X40);
-    set_bits(cmd->data, 55, 8, cmd->SET_ME_X00_1);   
-    cmd->CHECKSUM = calculate_checksum(id, cmd->data, dlc);
-    set_bits(cmd->data, 63, 8, cmd->CHECKSUM);   
 }
 
 void SendFrame(uint8_t instance, uint32_t msg_id, uint8_t *data, uint8_t dlc){
@@ -236,9 +217,14 @@ void create_steer_command(SteerCommand *cmd){
     uint32_t msg_id = ID_STEERING_LKA;
     uint8_t dlc = 5u;
     uint8_t data[8];
+    SteerCommand localCmd;
     taskENTER_CRITICAL();
-    encode_steer_command(msg_id, cmd, dlc);
-    memcpy(data, cmd->data, dlc);
+    localCmd = *cmd;
+    taskEXIT_CRITICAL();
+    encode_steer_command(msg_id, &localCmd, dlc);
+    memcpy(data, localCmd.data, dlc);
+    taskENTER_CRITICAL();
+    *cmd = localCmd;
     taskEXIT_CRITICAL();
     SendFrame(bus, msg_id, data, dlc);
 }
@@ -247,9 +233,14 @@ void create_acc_command(AccelCommand *cmd){
     uint32_t msg_id = ID_ACC_CONTROL;
     uint8_t dlc = 8u;
     uint8_t data[8];
+    AccelCommand localCmd;
     taskENTER_CRITICAL();
-    encode_acc_command(msg_id, cmd, dlc);
-    memcpy(data, cmd->data, dlc);
+    localCmd = *cmd;
+    taskEXIT_CRITICAL();
+    encode_acc_command(msg_id, &localCmd, dlc);
+    memcpy(data, localCmd.data, dlc);
+    taskENTER_CRITICAL();
+    *cmd = localCmd;
     taskEXIT_CRITICAL();
     SendFrame(bus, msg_id, data, dlc);
 }
@@ -261,11 +252,19 @@ void create_pcs_commands(PcsCommand *cmd, PcsCommand_2 *cmd2){
     uint8_t dlc2 = 8u;
     uint8_t data1[8];
     uint8_t data2[8];
+    PcsCommand localCmd;
+    PcsCommand_2 localCmd2;
     taskENTER_CRITICAL();
-    encode_pcs_command(msg_id, cmd, dlc);
-    encode_pcs_command_2(msg_id_2, cmd2, dlc2);
-    memcpy(data1, cmd->data, dlc);
-    memcpy(data2, cmd2->data, dlc2);
+    localCmd = *cmd;
+    localCmd2 = *cmd2;
+    taskEXIT_CRITICAL();
+    encode_pcs_command(msg_id, &localCmd, dlc);
+    encode_pcs_command_2(msg_id_2, &localCmd2, dlc2);
+    memcpy(data1, localCmd.data, dlc);
+    memcpy(data2, localCmd2.data, dlc2);
+    taskENTER_CRITICAL();
+    *cmd = localCmd;
+    *cmd2 = localCmd2;
     taskEXIT_CRITICAL();
     SendFrame(bus, msg_id, data1, dlc);
     SendFrame(bus, msg_id_2, data2, dlc2);
@@ -276,9 +275,14 @@ void create_acc_cancel_command(AccelCancelCommand *cmd){
     uint32_t msg_id = ID_PCM_CRUISE;
     uint8_t dlc = 8u;
     uint8_t data[8];
+    AccelCancelCommand localCmd;
     taskENTER_CRITICAL();
-    encode_acc_cancel_command(msg_id, cmd, dlc);
-    memcpy(data, cmd->data, dlc);
+    localCmd = *cmd;
+    taskEXIT_CRITICAL();
+    encode_acc_cancel_command(msg_id, &localCmd, dlc);
+    memcpy(data, localCmd.data, dlc);
+    taskENTER_CRITICAL();
+    *cmd = localCmd;
     taskEXIT_CRITICAL();
     SendFrame(bus, msg_id, data, dlc);
 }
@@ -287,9 +291,14 @@ void create_fcw_command(FcwCommand *cmd){
     uint32_t msg_id = ID_PCS_HUD;
     uint8_t dlc = 8u;
     uint8_t data[8];
+    FcwCommand localCmd;
     taskENTER_CRITICAL();
-    encode_fcw_command(msg_id, cmd, dlc);
-    memcpy(data, cmd->data, dlc);
+    localCmd = *cmd;
+    taskEXIT_CRITICAL();
+    encode_fcw_command(msg_id, &localCmd, dlc);
+    memcpy(data, localCmd.data, dlc);
+    taskENTER_CRITICAL();
+    *cmd = localCmd;
     taskEXIT_CRITICAL();
     SendFrame(bus, msg_id, data, dlc);
 }
@@ -298,22 +307,31 @@ void create_ui_command(UICommand *cmd){
     uint32_t msg_id = ID_LKAS_HUD;
     uint8_t dlc = 8u;
     uint8_t data[8];
+    UICommand localCmd;
     taskENTER_CRITICAL();
-    encode_ui_command(msg_id, cmd, dlc);
-    memcpy(data, cmd->data, dlc);
+    localCmd = *cmd;
+    taskEXIT_CRITICAL();
+    encode_ui_command(msg_id, &localCmd, dlc);
+    memcpy(data, localCmd.data, dlc);
+    taskENTER_CRITICAL();
+    *cmd = localCmd;
     taskEXIT_CRITICAL();
     SendFrame(bus, msg_id, data, dlc);
 }
-void create_ipas_steer_command(SteeringIpasCommand *cmd, SteeringIpasCommaCommand *cmd2, bool apgs_enabled){
+void create_ipas_steer_command(SteeringIpasCommand *cmd, bool apgs_enabled){
     uint8_t bus = 0;
     uint32_t msg_id = ID_STEERING_IPAS;
     uint8_t dlc = 8u;
     uint8_t data[8];
-    (void)cmd2;
     if(apgs_enabled){
+        SteeringIpasCommand localCmd;
         taskENTER_CRITICAL();
-        encode_ipas_steer_command(msg_id, cmd, dlc);
-        memcpy(data, cmd->data, dlc);
+        localCmd = *cmd;
+        taskEXIT_CRITICAL();
+        encode_ipas_steer_command(msg_id, &localCmd, dlc);
+        memcpy(data, localCmd.data, dlc);
+        taskENTER_CRITICAL();
+        *cmd = localCmd;
         taskEXIT_CRITICAL();
         SendFrame(bus, msg_id, data, dlc);
     }
@@ -325,18 +343,18 @@ void Encoder(void){
         gMsgTimers[0].last_run = now;
         create_steer_command(&gSteerCommand);
     }
-    if ((now - gMsgTimers[1].last_run) >= gMsgTimers[1].period){
-        gMsgTimers[1].last_run = now;
-        create_acc_command(&gAccelCommand);
-    }
+    // if ((now - gMsgTimers[1].last_run) >= gMsgTimers[1].period){
+    //     gMsgTimers[1].last_run = now;
+    //     create_acc_command(&gAccelCommand);
+    // }
     if ((now - gMsgTimers[2].last_run) >= gMsgTimers[2].period){
         gMsgTimers[2].last_run = now;
         create_pcs_commands(&gPcsCommand, &gPcsCommand2);
     }
-    if ((now - gMsgTimers[3].last_run) >= gMsgTimers[3].period){
-        gMsgTimers[3].last_run = now;
-        create_acc_cancel_command(&gAccelCancelCommand);
-    }
+    // if ((now - gMsgTimers[3].last_run) >= gMsgTimers[3].period){
+    //     gMsgTimers[3].last_run = now;
+    //     create_acc_cancel_command(&gAccelCancelCommand);
+    // }
     if ((now - gMsgTimers[4].last_run) >= gMsgTimers[4].period){
         gMsgTimers[4].last_run = now;
         create_fcw_command(&gFcwCommand);
@@ -347,7 +365,7 @@ void Encoder(void){
     }
     if ((now - gMsgTimers[6].last_run) >= gMsgTimers[6].period){
         gMsgTimers[6].last_run = now;
-        create_ipas_steer_command(&gSteeringIpasCommand, &gSteeringIpasCommaCommand, true);
+        create_ipas_steer_command(&gSteeringIpasCommand, true);
     }
 }
 

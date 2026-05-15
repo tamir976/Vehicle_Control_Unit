@@ -80,7 +80,9 @@ void Can_InitOne(uint8_t inst, Flexcan_Ip_StateType *state, const Flexcan_Ip_Con
     }
     FlexCAN_Ip_ExitFreezeMode(inst);
     (void)FlexCAN_Ip_SetStartMode(inst);
-    if(WaitStartMode(inst)){}
+    if(!WaitStartMode(inst)){
+        return;
+    }
     FlexCAN_Ip_EnableInterrupts_Privileged(inst);
 }
 

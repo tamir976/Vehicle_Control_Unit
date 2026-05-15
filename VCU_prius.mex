@@ -161,26 +161,10 @@
                         <pin_feature name="direction" value="INPUT"/>
                      </pin_features>
                   </pin>
-                  <pin peripheral="SIUL2" signal="gpio, 92" pin_num="P17" pin_signal="PTC28">
-                     <pin_features>
-                        <pin_feature name="direction" value="OUTPUT"/>
-                     </pin_features>
-                  </pin>
-                  <pin peripheral="SIUL2" signal="gpio, 93" pin_num="N16" pin_signal="PTC29">
-                     <pin_features>
-                        <pin_feature name="direction" value="OUTPUT"/>
-                     </pin_features>
-                  </pin>
-                  <pin peripheral="SIUL2" signal="gpio, 94" pin_num="N17" pin_signal="PTC30">
-                     <pin_features>
-                        <pin_feature name="direction" value="OUTPUT"/>
-                     </pin_features>
-                  </pin>
-                  <pin peripheral="SIUL2" signal="gpio, 95" pin_num="L14" pin_signal="PTC31">
-                     <pin_features>
-                        <pin_feature name="direction" value="OUTPUT"/>
-                     </pin_features>
-                  </pin>
+                  <pin peripheral="CAN3" signal="can3_tx" pin_num="P17" pin_signal="PTC28"/>
+                  <pin peripheral="CAN3" signal="can3_rx" pin_num="N16" pin_signal="PTC29"/>
+                  <pin peripheral="CAN4" signal="can4_tx" pin_num="N17" pin_signal="PTC30"/>
+                  <pin peripheral="CAN4" signal="can4_rx" pin_num="L14" pin_signal="PTC31"/>
                   <pin peripheral="SIUL2" signal="gpio, 98" pin_num="F16" pin_signal="PTD2">
                      <pin_features>
                         <pin_feature name="direction" value="OUTPUT"/>

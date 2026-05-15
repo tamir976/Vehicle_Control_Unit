@@ -22,6 +22,19 @@ typedef enum{
 }GearCmd;
 
 typedef enum{
+    VisualAlertNone,
+    VisualAlertFcw,
+    VisualAlertSteerRequired,
+    VisualAlertLdw
+} VisualAlert;
+
+typedef struct {
+    VisualAlert visualAlert;
+    bool leadVisible;
+    uint8_t leadDistanceBars;
+} HudControl;
+
+typedef enum{
     Turn_NONE,
     DISABLE,
     LEFT,
@@ -45,6 +58,7 @@ typedef struct{
 
 typedef struct {
     Actuators actuators;
+    HudControl hudControl;
     float throttleCmd; // no use
     float brakeCmd; //no use
     bool accEnable; // lower level accCmd enable 

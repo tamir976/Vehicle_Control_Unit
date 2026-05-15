@@ -12,7 +12,7 @@ typedef struct{
     bool initialized;
     bool steer_angle_enabled;
     uint8_t ipas_reset_counter;
-    int16_t last_angle;
+    float last_angle;
     uint32_t frame;
 } IpasControllerState;
 
@@ -25,6 +25,49 @@ typedef struct {
     uint8_t data[8];
 } SteerCommand;
 
+typedef struct{
+    float x;
+    float dt;
+    float alpha;
+    bool initialized;
+} MathFirstOrderFilter;
+
+typedef struct{
+    const float *k_p_bp;
+    const float *k_p_v;
+    uint8_t k_p_len;
+    const float *k_i_bp;
+    const float *k_i_v;
+    uint8_t k_i_len;
+    const float *k_d_bp;
+    const float *k_d_v;
+    uint8_t k_d_len;
+    float k_f;
+    float pos_limit;
+    float neg_limit;
+    float i_unwind_rate;
+    float i_rate;
+    float speed;
+    float p;
+    float i;
+    float d;
+    float f;
+    float control;
+} PidController;
+
+typedef struct{
+    bool initialized;
+    bool last_standstill;
+    bool standstill_req;
+    bool permit_braking;
+    uint8_t distance_button;
+    float prev_accel;
+    float accel;
+    MathFirstOrderFilter pitch_filter;
+    MathFirstOrderFilter aego_filter;
+    PidController long_pid;
+    uint32_t frame;
+} ToyotaAccControllerState;
 
 typedef struct{
     float ACCEL_CMD;
@@ -137,18 +180,6 @@ typedef struct{
     uint8_t data[8];
 } SteeringIpasCommand;
 
-typedef struct{
-    uint8_t STATE;
-    float ANGLE;
-    uint8_t SET_ME_X10;
-    uint8_t SET_ME_X00;
-    uint8_t DIRECTION_CMD;
-    uint8_t SET_ME_X40;
-    uint8_t SET_ME_X00_1;
-    uint8_t CHECKSUM;
-    uint8_t data[8];
-} SteeringIpasCommaCommand;
-
 extern SteerCommand gSteerCommand;
 extern AccelCommand gAccelCommand;
 extern PcsCommand gPcsCommand;
@@ -157,7 +188,6 @@ extern AccelCancelCommand gAccelCancelCommand;
 extern FcwCommand gFcwCommand;
 extern UICommand gUICommand; 
 extern SteeringIpasCommand gSteeringIpasCommand;
-extern SteeringIpasCommaCommand gSteeringIpasCommaCommand;
 extern IpasControllerState gIpasControllerState;
 void ProcessCommands(CarControl *cc, CarState *cs);
 

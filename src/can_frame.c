@@ -4,6 +4,8 @@
 #include <task.h>
 #include <string.h>
 
+#define CAN_RX_DRAIN_BUDGET (8u)
+
 CanFrameEntry bus0Table[CAN_CACHE_SIZE];
 CanFrameEntry bus1Table[CAN_CACHE_SIZE];
 CanFrameEntry bus2Table[CAN_CACHE_SIZE];
@@ -121,23 +123,31 @@ void CanCache_Update(uint8_t bus, const Flexcan_Ip_MsgBuffType *rxMsg)
 void CanCarRxTask(void *pv){
     (void)pv;
     CanRx canRx_;
-    TickType_t lastWake = xTaskGetTickCount();
     for(;;){
         if(xQueueReceive(g_canCarRxQueue, &canRx_, portMAX_DELAY) == pdTRUE){
             CanCache_Update(canRx_.instance, &canRx_.frame);
+            for(uint8_t drained = 1u; drained < CAN_RX_DRAIN_BUDGET; drained++){
+                if(xQueueReceive(g_canCarRxQueue, &canRx_, 0u) != pdTRUE){
+                    break;
+                }
+                CanCache_Update(canRx_.instance, &canRx_.frame);
+            }
         }
-        vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(1));
     }
 }
 
 void CanPcRxTask(void *pv){
     (void)pv;
     CanRx canRx_;
-    TickType_t lastWake = xTaskGetTickCount();
     for(;;){
         if(xQueueReceive(g_canPcRxQueue, &canRx_, portMAX_DELAY) == pdTRUE){
             CanCache_Update(canRx_.instance, &canRx_.frame);
+            for(uint8_t drained = 1u; drained < CAN_RX_DRAIN_BUDGET; drained++){
+                if(xQueueReceive(g_canPcRxQueue, &canRx_, 0u) != pdTRUE){
+                    break;
+                }
+                CanCache_Update(canRx_.instance, &canRx_.frame);
+            }
         }
-        vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(1));
     }
 }

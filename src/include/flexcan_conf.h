@@ -23,7 +23,7 @@
 #define CAN0_TX_SIZE (32u)
 #define CAN1_TX_SIZE (32u)
 #define CAN2_TX_SIZE (8u)
-#define CAN3_TX_SIZE (16u)
+#define CAN3_TX_SIZE (12u)
 #define CAN4_TX_SIZE (8u)
 #define CAN5_TX_SIZE (8u)
 

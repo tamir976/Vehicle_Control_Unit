@@ -7,6 +7,9 @@ const uint8_t PRIUS_SPEED_MSG_DATA[8] = {0x30, 0x00, 0x00, 0x74, 0x00, 0x00, 0x0
 const uint8_t PRIUS_GEAR_MSG_DATA[8]  = {0x07, 0xA0, 0x1F, 0x00, 0x08, 0x00, 0x10, 0x00};
 QueueHandle_t epsQueue4;
 QueueHandle_t epsQueue5;
+
+#define EPS_RX_DRAIN_BUDGET (8u)
+
 void EpsForward4(Flexcan_Ip_MsgBuffType *tx4){
     Flexcan_Ip_DataInfoType txi;
     txi.msg_id_type = FLEXCAN_MSG_ID_STD;
@@ -52,22 +55,32 @@ void EpsForward5(Flexcan_Ip_MsgBuffType *tx5){
 
 void EPS4Task(void *pv){
     (void)pv;
-    TickType_t lastWake = xTaskGetTickCount();
     Flexcan_Ip_MsgBuffType tx4;
     for(;;){
-        xQueueReceive(epsQueue4, &tx4, portMAX_DELAY);
-        EpsForward4(&tx4);
-        vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(1));
+        if(xQueueReceive(epsQueue4, &tx4, portMAX_DELAY) == pdTRUE){
+            EpsForward4(&tx4);
+            for(uint8_t drained = 1u; drained < EPS_RX_DRAIN_BUDGET; drained++){
+                if(xQueueReceive(epsQueue4, &tx4, 0u) != pdTRUE){
+                    break;
+                }
+                EpsForward4(&tx4);
+            }
+        }
     }
 }
 
 void EPS5Task(void *pv){
     (void)pv;
-    TickType_t lastWake = xTaskGetTickCount();
     Flexcan_Ip_MsgBuffType tx5;
     for(;;){
-        xQueueReceive(epsQueue5, &tx5, portMAX_DELAY);
-        EpsForward5(&tx5);
-        vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(1));
+        if(xQueueReceive(epsQueue5, &tx5, portMAX_DELAY) == pdTRUE){
+            EpsForward5(&tx5);
+            for(uint8_t drained = 1u; drained < EPS_RX_DRAIN_BUDGET; drained++){
+                if(xQueueReceive(epsQueue5, &tx5, 0u) != pdTRUE){
+                    break;
+                }
+                EpsForward5(&tx5);
+            }
+        }
     }
 }

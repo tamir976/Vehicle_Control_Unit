@@ -126,10 +126,10 @@ PortContainer_0_BOARD_InitPeripherals:
   - {pin_num: R14, peripheral: SIUL2, signal: 'gpio, 89', pin_signal: PTC25, direction: OUTPUT}
   - {pin_num: P15, peripheral: SIUL2, signal: 'gpio, 90', pin_signal: PTC26, direction: OUTPUT}
   - {pin_num: R16, peripheral: SIUL2, signal: 'gpio, 91', pin_signal: PTC27, direction: INPUT}
-  - {pin_num: P17, peripheral: SIUL2, signal: 'gpio, 92', pin_signal: PTC28, direction: OUTPUT}
-  - {pin_num: N16, peripheral: SIUL2, signal: 'gpio, 93', pin_signal: PTC29, direction: OUTPUT}
-  - {pin_num: N17, peripheral: SIUL2, signal: 'gpio, 94', pin_signal: PTC30, direction: OUTPUT}
-  - {pin_num: L14, peripheral: SIUL2, signal: 'gpio, 95', pin_signal: PTC31, direction: OUTPUT}
+  - {pin_num: P17, peripheral: CAN3, signal: can3_tx, pin_signal: PTC28}
+  - {pin_num: N16, peripheral: CAN3, signal: can3_rx, pin_signal: PTC29}
+  - {pin_num: N17, peripheral: CAN4, signal: can4_tx, pin_signal: PTC30}
+  - {pin_num: L14, peripheral: CAN4, signal: can4_rx, pin_signal: PTC31}
   - {pin_num: F16, peripheral: SIUL2, signal: 'gpio, 98', pin_signal: PTD2, direction: OUTPUT}
   - {pin_num: F17, peripheral: SIUL2, signal: 'gpio, 99', pin_signal: PTD3, direction: INPUT}
   - {pin_num: G16, peripheral: SIUL2, signal: 'gpio, 100', pin_signal: PTD4, direction: OUTPUT}
