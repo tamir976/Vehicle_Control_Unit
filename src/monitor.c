@@ -9,13 +9,13 @@
 #include "include/car_control.h"
 #include "include/decoder.h"
 #include "include/control.h"
+#include "include/encoder.h"
 
 
 void CanCache_RefreshValidity(void)
 {
     TickType_t now;
     now = xTaskGetTickCount();
-
     for(size_t i = 0u; i < CAN_CACHE_SIZE; i++){
         taskENTER_CRITICAL();
         if(gCan0Cache.entries[i].used != 0u){
@@ -46,56 +46,42 @@ void CanCache_RefreshValidity(void)
 void MonitorTask(void *pv)
 {
     TickType_t lastWakeTime;
+    uint32_t lastAccTxCount = 0u;
+    bool monitorInitialized = false;
     (void)pv;
-
     lastWakeTime = xTaskGetTickCount();
     for (;;)
     {
         CanCache_RefreshValidity();
+
         CarControl ccSnap;
         CarState csSnap;
-        SteeringIpasCommand ipasSnap;
-        IpasControllerState ipasStateSnap;
-        int32_t reqCentiDeg;
-        int32_t reqAbsCentiDeg;
-        int32_t outCentiDeg;
-        int32_t outAbsCentiDeg;
-        const char *reqSign;
-        const char *outSign;
+        AccelCommand accelSnap;
 
         taskENTER_CRITICAL();
         ccSnap = gCarControl[CcActiveId];
         csSnap = gCarState[CsActiveId];
-        ipasSnap = gSteeringIpasCommand;
-        ipasStateSnap = gIpasControllerState;
+        accelSnap = gAccelCommand;
         taskEXIT_CRITICAL();
-
-        reqCentiDeg = (ccSnap.actuators.steeringAngleDegCmd >= 0.0f)
-                    ? (int32_t)((ccSnap.actuators.steeringAngleDegCmd * 100.0f) + 0.5f)
-                    : (int32_t)((ccSnap.actuators.steeringAngleDegCmd * 100.0f) - 0.5f);
-        reqAbsCentiDeg = (reqCentiDeg < 0) ? -reqCentiDeg : reqCentiDeg;
-        reqSign = (reqCentiDeg < 0) ? "-" : "";
-        outCentiDeg = (ipasSnap.ANGLE >= 0.0f)
-                    ? (int32_t)((ipasSnap.ANGLE * 100.0f) + 0.5f)
-                    : (int32_t)((ipasSnap.ANGLE * 100.0f) - 0.5f);
-        outAbsCentiDeg = (outCentiDeg < 0) ? -outCentiDeg : outCentiDeg;
-        outSign = (outCentiDeg < 0) ? "-" : "";
-
-        char buffer[128];
+        char buffer[512];
         int length = snprintf(buffer, sizeof(buffer),
-                              "cc=%s%ld.%02ld out=%s%ld.%02ld ipas=%u en=%u st=%u\r\n",
-                              reqSign,
-                              (long)(reqAbsCentiDeg / 100),
-                              (long)(reqAbsCentiDeg % 100),
-                              outSign,
-                              (long)(outAbsCentiDeg / 100),
-                              (long)(outAbsCentiDeg % 100),
-                              (unsigned)csSnap.ipasState,
-                              (unsigned)ipasStateSnap.steer_angle_enabled,
-                              (unsigned)ipasSnap.STATE);
+                              "\r\n"
+                              "CS: pcm_status=%u follow_dist=%u acc_type=%u\r\n"
+                              "CC: emergency=%u cancel_req=%u long_state=%u\r\n"
+                              "ACC_CMD: cancel=%u dist_btn=%u mini=%u permit_brake=%u release_standstill=%u\r\n",
+                              (unsigned)csSnap.pcmAccStatus,
+                              (unsigned)csSnap.pcmFollowDistance,
+                              (unsigned)csSnap.accType,
+                              (unsigned)ccSnap.emergency,
+                              (unsigned)ccSnap.cancelReq,
+                              (unsigned)ccSnap.actuators.longcontrolstate,
+                              (unsigned)accelSnap.CANCEL_REQ,
+                              (unsigned)accelSnap.DISTANCE,
+                              (unsigned)accelSnap.MINI_CAR,
+                              (unsigned)accelSnap.PERMIT_BRAKING,
+                              (unsigned)accelSnap.RELEASE_STANSTILL);
 
-        if (length > 0)
-        {
+        if(length > 0){
             (void)Lpuart_Uart_Ip_SyncSend(INST_UART2,
                                          (const uint8_t *)buffer,
                                          (uint32_t)length,

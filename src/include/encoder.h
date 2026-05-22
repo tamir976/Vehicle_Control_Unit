@@ -35,6 +35,7 @@ void create_fcw_command(FcwCommand *cmd);
 void create_ui_command(UICommand *cmd);
 void create_ipas_steer_command(SteeringIpasCommand *cmd, bool apgs_enabled);
 void Encoder(void);
+uint32_t get_acc_tx_count(void);
 static inline void set_bits_be(uint8_t *data, uint16_t start, uint8_t len, uint32_t value){
     if(len < 32){
         value &= (1u << len) - 1u;

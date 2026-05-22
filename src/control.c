@@ -14,7 +14,7 @@
 #define ANGLE_MAX_LEN 3
 #define ANGLE_DELTA_LEN 3
 
-#define TOYOTA_ACC_ACCEL_MAX 1.5f
+#define TOYOTA_ACC_ACCEL_MAX 3.5f
 #define TOYOTA_ACC_ACCEL_MIN -3.5f
 #define TOYOTA_ACC_PITCH_RC 0.5f
 #define TOYOTA_ACC_AEGO_RC 0.25f
@@ -48,13 +48,13 @@ SteeringIpasCommand gSteeringIpasCommand = {0};
 IpasControllerState gIpasControllerState = {0};
 static ToyotaAccControllerState acc_state = {0};
 static uint8_t acc_control_divider = 0u;
+static bool acc_command_ready = false;
 
 static void ipas_reset_state(void){
     gIpasControllerState.initialized= true;
     gIpasControllerState.steer_angle_enabled = false;
     gIpasControllerState.ipas_reset_counter = 0u;
     gIpasControllerState.last_angle = 0.f;
-    gIpasControllerState.frame = 0u;
 }
 static void ipas_default(SteeringIpasCommand *cmd){
     cmd->STATE = 1u;
@@ -64,10 +64,6 @@ static void ipas_default(SteeringIpasCommand *cmd){
     cmd->SET_ME_X00_1 = 0u;
     cmd->SET_ME_X10 = 0x10u;
     cmd->SET_ME_X40 = 0x40;
-}
-
-static void ipas_increment_frame_counter(void){
-    gIpasControllerState.frame = (gIpasControllerState.frame + 1u) % 100u;
 }
 
 static float clipf(float v, float lo, float hi){
@@ -195,12 +191,8 @@ static void toyota_acc_reset_state(void){
              TOYOTA_LONG_PID_KI_BP, TOYOTA_LONG_PID_KI_V, 3u,
              TOYOTA_LONG_PID_KD_BP, TOYOTA_LONG_PID_KD_V, 1u,
              TOYOTA_ACC_PID_KF, TOYOTA_ACC_ACCEL_MAX, TOYOTA_ACC_ACCEL_MIN, 1.0f / (DT_CTRL * 3.0f));
-    acc_state.frame = 0u;
     acc_control_divider = 0u;
-}
-
-static void toyota_acc_increment_frame_counter(void){
-    acc_state.frame = (acc_state.frame + 1u) % 100u;
+    acc_command_ready = false;
 }
 
 void toyota_acc_default_command(AccelCommand *cmd){
@@ -230,9 +222,6 @@ static void toyota_acc_update_standstill_state(const CarState *cs){
 }
 
 static void toyota_acc_update_distance_button(const HudControl *hud_control, const CarState *cs){
-    if((acc_state.frame % 2u) != 0u){
-        return;
-    }
     const int desired_distance = 4 - (int)hud_control->leadDistanceBars;
     if(cs->cruiseState.enabled && ((int)cs->pcmFollowDistance != desired_distance)){
         acc_state.distance_button = acc_state.distance_button == 0u ? 1u : 0u;
@@ -290,7 +279,7 @@ static float toyota_acc_compute_pcm_accel_cmd(const CarControl *cc, const CarSta
 static void toyota_acc_make_command(AccelCommand *cmd, const CarState *cs, float accel, bool lead, bool pcm_cancel_cmd, bool fcw_alert){
     toyota_acc_default_command(cmd);
     cmd->ACCEL_CMD = accel;
-    cmd->ACC_TYPE = cs->accType;
+    cmd->ACC_TYPE = 1u;
     cmd->DISTANCE = acc_state.distance_button;
     cmd->MINI_CAR = lead;
     cmd->PERMIT_BRAKING = acc_state.permit_braking;
@@ -312,13 +301,17 @@ static void process_accel_cmd(AccelCommand *cmd, const CarControl *cc, const Car
     if(!acc_state.initialized){
         toyota_acc_reset_state();
     }
-    const bool control_enabled = (cc->vcuEnabled != false);
-    const HudControl hud_control = cc->hudControl;
+    const bool control_enabled = cc->vcuEnabled == true;
+    const HudControl hud_control = {
+        .leadVisible = false,
+        .leadDistanceBars = 2u,
+        .visualAlert = VisualAlertNone,
+    };
     const bool fcw_alert = hud_control.visualAlert == VisualAlertFcw;
-    const bool lead = hud_control.leadVisible || (cs->vEgo < 12.0f);
-    const bool long_active = control_enabled && (cc->longActive != false) && (cc->accEnable != false);
+    const bool lead = hud_control.leadVisible;
+    const bool long_active = control_enabled && (cc->longActive == true) && (cc->accEnable == true);
     const bool stopping_active = cc->actuators.longcontrolstate == stopping;
-    const bool pcm_cancel_cmd = cc->emergency != false;
+    const bool pcm_cancel_cmd = cc->emergency == true;
     if (!pcm_cancel_cmd){
 
         toyota_acc_update_distance_button(&hud_control, cs);
@@ -340,23 +333,14 @@ static void process_accel_cmd(AccelCommand *cmd, const CarControl *cc, const Car
         cmd->PERMIT_BRAKING = true;
         cmd->RELEASE_STANSTILL = true;
         cmd->MINI_CAR = lead;
-        cmd->ACC_TYPE = cs->accType;
+        cmd->ACC_TYPE = 1u;
         cmd->ACC_CUT_IN = false;
         cmd->DISTANCE = acc_state.distance_button;
         return;
     }
 }
-
-uint32_t toyota_acc_get_frame_counter(void) {
-  return acc_state.frame;
-}
-
-float toyota_acc_get_last_accel(void) {
-  return acc_state.accel;
-}
-
-void toyota_acc_reset_process_state(void) {
-  toyota_acc_reset_state();
+bool toyota_acc_command_is_ready(void){
+    return acc_command_ready;
 }
 
 static uint8_t ipas_direction_cmd(float angle){
@@ -420,7 +404,6 @@ void create_ipas_command(CarState *cs, CarControl *cc, SteeringIpasCommand *cmd)
     if(!gIpasControllerState.initialized){
         ipas_reset_state();
     }
-    ipas_increment_frame_counter();
     const bool lat_active = (cc->latActive != false) &&
                             (absf(cs->steeringTorque) < MAX_USER_TORQUE);
     if(lat_active){
@@ -501,7 +484,7 @@ void ProcessCommands(CarControl *cc, CarState *cs){
     acc_control_divider = (uint8_t)((acc_control_divider + 1u) % 3u);
     if(acc_control_divider == 0u){
         process_accel_cmd(&accelCommand, cc, cs);
-        toyota_acc_increment_frame_counter();
+        acc_command_ready = true;
     }
 
     update_fcw_command(&fcwCommand, cs, cc);

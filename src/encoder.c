@@ -8,14 +8,16 @@
 
 
 MsgTimer_t gMsgTimers[] = {
-    {0, pdMS_TO_TICKS(10u)}, // Steer command timer
     {0, pdMS_TO_TICKS(33u)}, // Accel command timer
+    {0, pdMS_TO_TICKS(10u)}, // IPAS steer command timer
+    {0, pdMS_TO_TICKS(10u)}, // Steer command timer
     {0, pdMS_TO_TICKS(100u)}, // PCS command timer
     {0, pdMS_TO_TICKS(10u)}, // Acc cancel command timer when active
     {0, pdMS_TO_TICKS(1000u)}, // FCW command timer
     {0, pdMS_TO_TICKS(200u)}, // UI command timer
-    {0, pdMS_TO_TICKS(10u)}, // IPAS steer command timer
 };
+
+static bool gAccFirstTxDone = false;
 
 uint8_t calculate_checksum(uint32_t id, const uint8_t *data, uint8_t dlc){
     uint32_t sum = dlc;
@@ -244,6 +246,7 @@ void create_acc_command(AccelCommand *cmd){
     taskEXIT_CRITICAL();
     SendFrame(bus, msg_id, data, dlc);
 }
+
 void create_pcs_commands(PcsCommand *cmd, PcsCommand_2 *cmd2){
     uint8_t bus = 0u;
     uint32_t msg_id = ID_PRE_COLLISION;
@@ -339,33 +342,36 @@ void create_ipas_steer_command(SteeringIpasCommand *cmd, bool apgs_enabled){
 
 void Encoder(void){
     TickType_t now = xTaskGetTickCount();
-    if((now - gMsgTimers[0].last_run) >= gMsgTimers[0].period){
+    if(toyota_acc_command_is_ready() &&
+       (!gAccFirstTxDone || ((now - gMsgTimers[0].last_run) >= gMsgTimers[0].period))){
         gMsgTimers[0].last_run = now;
+        create_acc_command(&gAccelCommand);
+        gAccFirstTxDone = true;
+    }
+    if ((now - gMsgTimers[1].last_run) >= gMsgTimers[1].period){
+        gMsgTimers[1].last_run = now;
+        create_ipas_steer_command(&gSteeringIpasCommand, true);
+    }
+
+    if((now - gMsgTimers[2].last_run) >= gMsgTimers[2].period){
+        gMsgTimers[2].last_run = now;
         create_steer_command(&gSteerCommand);
     }
-    // if ((now - gMsgTimers[1].last_run) >= gMsgTimers[1].period){
-    //     gMsgTimers[1].last_run = now;
-    //     create_acc_command(&gAccelCommand);
-    // }
-    if ((now - gMsgTimers[2].last_run) >= gMsgTimers[2].period){
-        gMsgTimers[2].last_run = now;
+    if ((now - gMsgTimers[3].last_run) >= gMsgTimers[3].period){
+        gMsgTimers[3].last_run = now;
         create_pcs_commands(&gPcsCommand, &gPcsCommand2);
     }
-    // if ((now - gMsgTimers[3].last_run) >= gMsgTimers[3].period){
-    //     gMsgTimers[3].last_run = now;
+    // if ((now - gMsgTimers[4].last_run) >= gMsgTimers[4].period){
+    //     gMsgTimers[4].last_run = now;
     //     create_acc_cancel_command(&gAccelCancelCommand);
     // }
-    if ((now - gMsgTimers[4].last_run) >= gMsgTimers[4].period){
-        gMsgTimers[4].last_run = now;
-        create_fcw_command(&gFcwCommand);
-    }
     if ((now - gMsgTimers[5].last_run) >= gMsgTimers[5].period){
         gMsgTimers[5].last_run = now;
-        create_ui_command(&gUICommand);
+        create_fcw_command(&gFcwCommand);
     }
     if ((now - gMsgTimers[6].last_run) >= gMsgTimers[6].period){
         gMsgTimers[6].last_run = now;
-        create_ipas_steer_command(&gSteeringIpasCommand, true);
+        create_ui_command(&gUICommand);
     }
 }
 

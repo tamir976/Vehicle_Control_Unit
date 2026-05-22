@@ -255,12 +255,12 @@ static void DecodeGearCs(CarState *cs){
 static void DecodeCruiseCs(CarState *cs){
     CanFrameEntry pcm2, pcm;
     if(FindFrameIdCs(ID_PCM_CRUISE_2, &pcm2) == true){
-        cs->accFaulted = DecodeBool(pcm2.data, pcm2.dlc, 47u, 1u, 0u);
-        cs->cruiseState.available = DecodeBool(pcm2.data, pcm2.dlc, 15u, 1u, 0u);
+        cs->accFaulted = DecodeBool(pcm2.data, pcm2.dlc, 47u, 1u, 0u) == true;
+        cs->cruiseState.available = DecodeBool(pcm2.data, pcm2.dlc, 15u, 1u, 0u) == true;
         float speed = (float)DecodeUnsigned(pcm2.data, pcm2.dlc, 23u, 8u, 1.0f, 0.0f, 0u);
         cs->cruiseState.SetSpeed = speed * (1 / 3.6f);
         uint8_t low_speed_lockout = (uint8_t)DecodeUnsigned(pcm2.data, pcm2.dlc, 14u, 2u, 1.0f, 0.0f, 0u);
-        if(cs->accFaulted && (low_speed_lockout == 2u)){
+        if(low_speed_lockout == 2u){
             cs->lockoutState = true;
         }else{
             cs->lockoutState = false;
@@ -268,7 +268,7 @@ static void DecodeCruiseCs(CarState *cs){
         cs->pcmFollowDistance = DecodeUnsigned(pcm2.data, pcm2.dlc, 12u, 2u, 1.0f, 0.0f, 0u);
     }
     if(FindFrameIdCs(ID_PCM_CRUISE, &pcm) == true){
-        cs->cruiseState.enabled = DecodeBool(pcm.data, pcm.dlc, 5u, 1u, 0u);    
+        cs->cruiseState.enabled = DecodeBool(pcm.data, pcm.dlc, 5u, 1u, 0u) == true;    
         uint8_t state = (uint8_t)DecodeUnsigned(pcm.data, pcm.dlc, 55u, 4u, 1.0f, 0.0f, 0u);
         cs->pcmAccStatus = state;
         cs->cruiseState.nonAdaptive = (state >= 1 && state <= 6);
@@ -286,7 +286,7 @@ static void DecodeBlinkersCs(CarState *cs){
     CanFrameEntry blinkers;
     if(FindFrameIdCs(ID_BLINKERS_STATE, &blinkers) == true){
         uint8_t blinker = (uint8_t)DecodeUnsigned(blinkers.data, blinkers.dlc, 29u, 2u, 1.0f, 0.0f, 0u);
-        cs->hazardLight = DecodeBool(blinkers.data, blinkers.dlc, 27u, 1u, 0u);
+        cs->hazardLight = DecodeBool(blinkers.data, blinkers.dlc, 27u, 1u, 0u) == true;
         switch(blinker){
             case 1: 
                 if(cs->hazardLight){
@@ -316,14 +316,6 @@ static void DecodeBlinkersCs(CarState *cs){
     }
 }
 
-static void DecodeAccType(CarState *cs){
-    CanFrameEntry entry;
-    if(FindFrameIdCs(ID_ACC_CONTROL, &entry) == true){
-        cs->accType = DecodeUnsigned(entry.data, entry.dlc, 23u, 2u, 1.0f, 0.0f, 0u);
-    }else{
-        return;
-    }
-}
 
 static void DecodeIpasCs(CarState *cs){
     CanFrameEntry entry;
@@ -424,7 +416,6 @@ void CarState_update(CarState *cs){
     DecodeCruiseCs(cs);
     DecodeBlinkersCs(cs);
     DecodeIpasCs(cs);
-    DecodeAccType(cs);
     cs->last_update_tick = xTaskGetTickCount();
 }
 

@@ -190,6 +190,10 @@ extern UICommand gUICommand;
 extern SteeringIpasCommand gSteeringIpasCommand;
 extern IpasControllerState gIpasControllerState;
 void ProcessCommands(CarControl *cc, CarState *cs);
+uint32_t toyota_acc_get_frame_counter(void);
+float toyota_acc_get_last_accel(void);
+void toyota_acc_reset_process_state(void);
+bool toyota_acc_command_is_ready(void);
 
 void ControlTask(void *pv);
 
