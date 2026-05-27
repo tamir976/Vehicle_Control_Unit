@@ -25,11 +25,11 @@
 #define TOYOTA_ACC_WINDDOWN_LIMIT -0.12f
 
 static const float ANGLE_MAX_BP[3] = {0.f, 5.f, 10.f};
-static const float ANGLE_MAX_V[3] = {510.f, 300.f, 150.f};
+static const float ANGLE_MAX_V[3] = {510.f, 400.f, 300.f};
 
 static const float ANGLE_DELTA_BP[3] = {0.f, 5.f, 15.f};
 static const float ANGLE_DELTA_V[3]  = {5.f, 3.f, 1.f};
-static const float ANGLE_DELTA_VU[3] = {5.f, 3.5f, 1.5f};
+static const float ANGLE_DELTA_VU[3] = {5.f, 4.f, 3.0f};
 static const float TOYOTA_LONG_PID_KP_BP[1] = {0.0f};
 static const float TOYOTA_LONG_PID_KP_V[1] = {0.0f};
 static const float TOYOTA_LONG_PID_KI_BP[3] = {0.0F, 5.0F, 35.0F};
@@ -308,7 +308,7 @@ static void process_accel_cmd(AccelCommand *cmd, const CarControl *cc, const Car
         .visualAlert = VisualAlertNone,
     };
     const bool fcw_alert = hud_control.visualAlert == VisualAlertFcw;
-    const bool lead = hud_control.leadVisible;
+    const bool lead = hud_control.leadVisible || cs->vEgo < 40.0f;
     const bool long_active = control_enabled && (cc->longActive == true) && (cc->accEnable == true);
     const bool stopping_active = cc->actuators.longcontrolstate == stopping;
     const bool pcm_cancel_cmd = cc->emergency == true;
@@ -404,7 +404,7 @@ void create_ipas_command(CarState *cs, CarControl *cc, SteeringIpasCommand *cmd)
     if(!gIpasControllerState.initialized){
         ipas_reset_state();
     }
-    const bool lat_active = (cc->latActive != false) &&
+    const bool lat_active = (cc->latActive != false) && (cs->cruiseState.enabled) &&
                             (absf(cs->steeringTorque) < MAX_USER_TORQUE);
     if(lat_active){
     	ipas_update_enable_state((cc->vcuEnabled != false), (cs->ipasState == enabled));

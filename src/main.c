@@ -40,8 +40,39 @@
 
 #define TJA1153_START_ID    (0x555u)
 #define TJA1153_CONFIG_ID   (0x18DA00F1u)
+#define TJA1153_START_RETRIES (10u)
 
 volatile int exit_code = 0;
+
+static Flexcan_Ip_StatusType TjaSendBlocking(uint8_t instance,
+                                             int32_t mb,
+                                             Flexcan_Ip_DataInfoType *txi,
+                                             uint32_t id,
+                                             uint8_t *data)
+{
+    Flexcan_Ip_StatusType status = FlexCAN_Ip_SendBlocking(instance, mb, txi, id, data, 1000u);
+    ReleaseTxMb(instance, (uint8_t)mb);
+
+    return status;
+}
+
+static Flexcan_Ip_StatusType TjaSendStart(uint8_t instance,
+                                          int32_t mb,
+                                          Flexcan_Ip_DataInfoType *txi,
+                                          uint8_t *data)
+{
+    Flexcan_Ip_StatusType status = FLEXCAN_STATUS_TIMEOUT;
+
+    for(uint8_t i = 0u; i < TJA1153_START_RETRIES; i++){
+        status = TjaSendBlocking(instance, mb, txi, TJA1153_START_ID, data);
+        if(status == FLEXCAN_STATUS_SUCCESS){
+            break;
+        }
+    }
+
+    return status;
+}
+
 static void Transceivers_Enable(void)
 {
     Siul2_Dio_Ip_WritePin(can0_en_PORT, can0_en_PIN, STD_HIGH);
@@ -70,47 +101,39 @@ static void SetupCan_TJA1153(void) {
 	/* CAN4 */
     int32_t mb = GetTxMB(INST_FLEXCAN4);
     if(mb >= 0){
-        (void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN4, mb, &txi, TJA1153_START_ID, d, 1000u);
-        ReleaseTxMb(INST_FLEXCAN4, (uint8_t)mb);
+        (void)TjaSendStart(INST_FLEXCAN4, mb, &txi, d);
         d[0] = 0x10; d[1] = 0x00; d[2] = 0x9F; d[3] = 0xFF; d[4] = 0xFF; d[5] = 0xFF;
         txi.msg_id_type = FLEXCAN_MSG_ID_EXT;
         txi.data_length = 6u;
-        (void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN4, mb, &txi, TJA1153_CONFIG_ID, d, 1000u);
-        ReleaseTxMb(INST_FLEXCAN4, (uint8_t)mb);
+        (void)TjaSendBlocking(INST_FLEXCAN4, mb, &txi, TJA1153_CONFIG_ID, d);
         d[0] = 0x10; d[1] = 0x01; d[2] = 0xC0; d[3] = 0x00; d[4] = 0x00; d[5] = 0x00;
-        (void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN4, mb, &txi, TJA1153_CONFIG_ID, d, 1000u);
-        ReleaseTxMb(INST_FLEXCAN4, (uint8_t)mb);
+        (void)TjaSendBlocking(INST_FLEXCAN4, mb, &txi, TJA1153_CONFIG_ID, d);
         d[0] = 0x10; d[1] = 0x02; d[2] = 0x50; d[3] = 0x00; d[4] = 0x07; d[5] = 0xFF;
-        (void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN4, mb, &txi, TJA1153_CONFIG_ID, d, 1000u);
-        ReleaseTxMb(INST_FLEXCAN4, (uint8_t)mb);
-        d[0] = 0x71; d[1] = 0x02; d[2] = 0x50; d[3] = 0x00; d[4] = 0x05; d[5] = 0x06; d[6] = 0x07; d[7] = 0x08;
+        (void)TjaSendBlocking(INST_FLEXCAN4, mb, &txi, TJA1153_CONFIG_ID, d);
+        d[0] = 0x71; d[1] = 0x02; d[2] = 0x03; d[3] = 0x04; d[4] = 0x05; d[5] = 0x06; d[6] = 0x07; d[7] = 0x08;
         txi.data_length = 8u;
-        (void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN4, mb, &txi, TJA1153_CONFIG_ID, d, 1000u);
-        ReleaseTxMb(INST_FLEXCAN4, (uint8_t)mb);
+        (void)TjaSendBlocking(INST_FLEXCAN4, mb, &txi, TJA1153_CONFIG_ID, d);
         Siul2_Dio_Ip_WritePin(can4_stb_PORT, can4_stb_PIN, STD_HIGH);
         /* CAN5 */
         (void)memset(d, 0, sizeof(d));
         txi.msg_id_type = FLEXCAN_MSG_ID_STD;
         txi.data_length = 8u;
         mb = GetTxMB(INST_FLEXCAN5);
-        (void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN5, mb, &txi, TJA1153_START_ID, d, 1000u);
-        ReleaseTxMb(INST_FLEXCAN5, (uint8_t)mb);
-        d[0] = 0x10; d[1] = 0x00; d[2] = 0x9F; d[3] = 0xFF; d[4] = 0xFF; d[5] = 0xFF;
-        txi.msg_id_type = FLEXCAN_MSG_ID_EXT;
-        txi.data_length = 6u;
-        (void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN5, mb, &txi, TJA1153_CONFIG_ID, d, 1000u);
-        ReleaseTxMb(INST_FLEXCAN5, (uint8_t)mb);
-        d[0] = 0x10; d[1] = 0x01; d[2] = 0xC0; d[3] = 0x00; d[4] = 0x00; d[5] = 0x00;
-        (void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN5, mb, &txi, TJA1153_CONFIG_ID, d, 1000u);
-        ReleaseTxMb(INST_FLEXCAN5, (uint8_t)mb);
-        d[0] = 0x10; d[1] = 0x02; d[2] = 0x50; d[3] = 0x00; d[4] = 0x07; d[5] = 0xFF;
-        (void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN5, mb, &txi, TJA1153_CONFIG_ID, d, 1000u);
-        ReleaseTxMb(INST_FLEXCAN5, (uint8_t)mb);
-        d[0] = 0x71; d[1] = 0x02; d[2] = 0x50; d[3] = 0x00; d[4] = 0x05; d[5] = 0x06; d[6] = 0x07; d[7] = 0x08;
-        txi.data_length = 8u;
-        (void)FlexCAN_Ip_SendBlocking(INST_FLEXCAN5, mb, &txi, TJA1153_CONFIG_ID, d, 1000u);
-        ReleaseTxMb(INST_FLEXCAN5, (uint8_t)mb);
-        Siul2_Dio_Ip_WritePin(can5_stb_PORT, can5_stb_PIN, STD_HIGH);
+        if(mb >= 0){
+            (void)TjaSendStart(INST_FLEXCAN5, mb, &txi, d);
+            d[0] = 0x10; d[1] = 0x00; d[2] = 0x9F; d[3] = 0xFF; d[4] = 0xFF; d[5] = 0xFF;
+            txi.msg_id_type = FLEXCAN_MSG_ID_EXT;
+            txi.data_length = 6u;
+            (void)TjaSendBlocking(INST_FLEXCAN5, mb, &txi, TJA1153_CONFIG_ID, d);
+            d[0] = 0x10; d[1] = 0x01; d[2] = 0xC0; d[3] = 0x00; d[4] = 0x00; d[5] = 0x00;
+            (void)TjaSendBlocking(INST_FLEXCAN5, mb, &txi, TJA1153_CONFIG_ID, d);
+            d[0] = 0x10; d[1] = 0x02; d[2] = 0x50; d[3] = 0x00; d[4] = 0x07; d[5] = 0xFF;
+            (void)TjaSendBlocking(INST_FLEXCAN5, mb, &txi, TJA1153_CONFIG_ID, d);
+            d[0] = 0x71; d[1] = 0x02; d[2] = 0x03; d[3] = 0x04; d[4] = 0x05; d[5] = 0x06; d[6] = 0x07; d[7] = 0x08;
+            txi.data_length = 8u;
+            (void)TjaSendBlocking(INST_FLEXCAN5, mb, &txi, TJA1153_CONFIG_ID, d);
+            Siul2_Dio_Ip_WritePin(can5_stb_PORT, can5_stb_PIN, STD_HIGH);
+        }
     }
 }
 
@@ -256,9 +279,9 @@ void Flexcan_error_callback(uint8_t instance,
             uint32_t u32ErrStatus, 
             const Flexcan_Ip_StateType *state){
     (void)state;
+    (void)instance;
     (void)eventType;
     (void)u32ErrStatus;
-    (void)instance;
 }
 
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)

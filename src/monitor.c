@@ -1,15 +1,17 @@
 #include "include/monitor.h"
+#include "include/car_state.h"
+#include "include/can_frame.h"
+#include "include/car_control.h"
+#include "include/control.h"
+#include "include/decoder.h"
 #include <Lpuart_Uart_Ip.h>
 #include <Lpuart_Uart_Ip_Sa_PBcfg.h>
 #include <stdio.h>
-#include "include/car_state.h"
-#include "include/flexcan_conf.h"
-#include "include/oled_display.h"
-#include "include/can_frame.h"
-#include "include/car_control.h"
-#include "include/decoder.h"
-#include "include/control.h"
-#include "include/encoder.h"
+
+static int32_t AngleToCentiDeg(float angle)
+{
+    return (int32_t)(angle * 100.0f);
+}
 
 
 void CanCache_RefreshValidity(void)
@@ -46,46 +48,33 @@ void CanCache_RefreshValidity(void)
 void MonitorTask(void *pv)
 {
     TickType_t lastWakeTime;
-    uint32_t lastAccTxCount = 0u;
-    bool monitorInitialized = false;
     (void)pv;
     lastWakeTime = xTaskGetTickCount();
     for (;;)
     {
         CanCache_RefreshValidity();
-
-        CarControl ccSnap;
-        CarState csSnap;
-        AccelCommand accelSnap;
+        float applyAngle;
+        float ccAngle;
 
         taskENTER_CRITICAL();
-        ccSnap = gCarControl[CcActiveId];
-        csSnap = gCarState[CsActiveId];
-        accelSnap = gAccelCommand;
+        applyAngle = gSteeringIpasCommand.ANGLE;
+        ccAngle = gCarControl[CcActiveId].actuators.steeringAngleDegCmd;
         taskEXIT_CRITICAL();
-        char buffer[512];
+
+        char buffer[96];
         int length = snprintf(buffer, sizeof(buffer),
-                              "\r\n"
-                              "CS: pcm_status=%u follow_dist=%u acc_type=%u\r\n"
-                              "CC: emergency=%u cancel_req=%u long_state=%u\r\n"
-                              "ACC_CMD: cancel=%u dist_btn=%u mini=%u permit_brake=%u release_standstill=%u\r\n",
-                              (unsigned)csSnap.pcmAccStatus,
-                              (unsigned)csSnap.pcmFollowDistance,
-                              (unsigned)csSnap.accType,
-                              (unsigned)ccSnap.emergency,
-                              (unsigned)ccSnap.cancelReq,
-                              (unsigned)ccSnap.actuators.longcontrolstate,
-                              (unsigned)accelSnap.CANCEL_REQ,
-                              (unsigned)accelSnap.DISTANCE,
-                              (unsigned)accelSnap.MINI_CAR,
-                              (unsigned)accelSnap.PERMIT_BRAKING,
-                              (unsigned)accelSnap.RELEASE_STANSTILL);
+                              "IPAS_ANGLE: apply_cd=%ld cc_cd=%ld\r\n",
+                              (long)AngleToCentiDeg(applyAngle),
+                              (long)AngleToCentiDeg(ccAngle));
 
         if(length > 0){
+            if(length >= (int)sizeof(buffer)){
+                length = (int)sizeof(buffer) - 1;
+            }
             (void)Lpuart_Uart_Ip_SyncSend(INST_UART2,
-                                         (const uint8_t *)buffer,
-                                         (uint32_t)length,
-                                         10000u);
+                                          (const uint8_t *)buffer,
+                                          (uint32_t)length,
+                                          80000u);
         }
 
         vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(500u));
